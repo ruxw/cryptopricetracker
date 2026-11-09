@@ -185,17 +185,9 @@ async def convert_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 reverse=True,  # signals the template to swap display sides
             )
 
-            coin_name = COINS[symbol]["name"]
-            caption = (
-                f"**{coin_name}** you get for **${usd_amount:,.2f} USD**\n"
-                f"`{crypto_amount:.6f} {symbol}` at `${format_price(usd_price)} / {symbol}`"
-            )
-
             await context.bot.send_photo(
                 chat_id=chat_id,
                 photo=image_buf,
-                caption=caption,
-                parse_mode=ParseMode.MARKDOWN,
             )
         except Exception as e:
             logger.error("Error in reverse convert command: %s", e)
@@ -256,23 +248,9 @@ async def convert_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             fiat_value=res["fiat_value"],
         )
 
-        fiat_info = FIAT_CURRENCIES[fiat]
-        f_sign = fiat_info["symbol"]
-        f_val_str = f"{f_sign}{format_price(res['fiat_value'], decimals=fiat_info['decimals'])}"
-        coin_name = COINS[crypto]["name"]
-
-        caption = (
-            f"**{amount} {coin_name}** = **{f_val_str} {fiat}**\n"
-            f"Rate: `1 {crypto} = ${format_price(res['usd_price'])} USD`"
-        )
-        kb = get_conversion_result_keyboard(crypto, amount, fiat)
-
         await context.bot.send_photo(
             chat_id=chat_id,
             photo=image_buf,
-            caption=caption,
-            parse_mode=ParseMode.MARKDOWN,
-            reply_markup=kb,
         )
     except Exception as e:
         logger.error("Error in convert command: %s", e)
@@ -358,25 +336,8 @@ async def convert_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 fiat_value=res["fiat_value"]
             )
 
-            fiat_info = FIAT_CURRENCIES.get(fiat, {"symbol": "$", "decimals": 2})
-            f_sign = fiat_info["symbol"]
-            f_val_str = f"{f_sign}{format_price(res['fiat_value'], decimals=fiat_info['decimals'])}"
-            coin_name = COINS.get(crypto, {}).get("name", crypto)
-
-            caption = (
-                f"💱 **Currencing Conversion Result**\n"
-                f"• **Asset:** `{amount} {coin_name} ({crypto})`\n"
-                f"• **Converted Value:** `{f_val_str}` ({fiat})\n"
-                f"• **Rate:** `1 {crypto} = ${format_price(res['usd_price'])} USD`\n\n"
-                f"_Professional conversion card generated dynamically:_"
-            )
-            kb = get_conversion_result_keyboard(crypto, amount, fiat)
-
             await context.bot.send_photo(
                 chat_id=chat_id,
                 photo=image_buf,
-                caption=caption,
-                parse_mode=ParseMode.MARKDOWN,
-                reply_markup=kb
             )
             return

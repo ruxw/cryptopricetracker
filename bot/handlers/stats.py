@@ -107,12 +107,9 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
         name = coin_data.get("name", symbol)
 
-        kb = get_coin_stats_keyboard(symbol)
-
         await context.bot.send_photo(
             chat_id=chat_id,
             photo=image_buf,
-            reply_markup=kb
         )
     except Exception as e:
         logger.error("Error generating coin stats for %s: %s", symbol, e)
@@ -167,12 +164,9 @@ async def stats_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
         name = coin_data.get("name", symbol)
 
-        kb = get_coin_stats_keyboard(symbol)
-
         await context.bot.send_photo(
             chat_id=chat_id,
             photo=image_buf,
-            reply_markup=kb
         )
     except Exception as e:
         logger.error("Error in stats callback: %s", e)

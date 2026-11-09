@@ -50,12 +50,9 @@ async def overview_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         overview_data = await crypto_service.get_all_overview_data()
         image_buf = render_market_overview(overview_data)
 
-        kb = get_overview_keyboard()
-
         await context.bot.send_photo(
             chat_id=chat_id,
             photo=image_buf,
-            reply_markup=kb
         )
     except Exception as e:
         logger.error("Error generating market overview: %s", e)
@@ -82,12 +79,9 @@ async def overview_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         overview_data = await crypto_service.get_all_overview_data()
         image_buf = render_market_overview(overview_data)
 
-        kb = get_overview_keyboard()
-
         await context.bot.send_photo(
             chat_id=chat_id,
             photo=image_buf,
-            reply_markup=kb
         )
     except Exception as e:
         logger.error("Error in overview callback: %s", e)

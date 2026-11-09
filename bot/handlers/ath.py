@@ -111,20 +111,9 @@ async def ath_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         except Exception:
             pass
 
-        caption = (
-            f"🚀 **{name} ({symbol}) All-Time High Record**\n"
-            f"• **Peak ATH Price:** `${p_str}`\n"
-            f"• **Recorded Date:** `{date_str}`\n\n"
-            f"_Official record powered by Currencing:_"
-        )
-        kb = get_ath_keyboard(symbol)
-
         await context.bot.send_photo(
             chat_id=chat_id,
             photo=image_buf,
-            caption=caption,
-            parse_mode=ParseMode.MARKDOWN,
-            reply_markup=kb
         )
     except Exception as e:
         logger.error("Error generating ATH card for %s: %s", symbol, e)
@@ -176,20 +165,9 @@ async def ath_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         except Exception:
             pass
 
-        caption = (
-            f"🚀 **{name} ({symbol}) All-Time High Record**\n"
-            f"• **Peak ATH Price:** `${p_str}`\n"
-            f"• **Recorded Date:** `{date_str}`\n\n"
-            f"_Official record powered by Currencing:_"
-        )
-        kb = get_ath_keyboard(symbol)
-
         await context.bot.send_photo(
             chat_id=chat_id,
             photo=image_buf,
-            caption=caption,
-            parse_mode=ParseMode.MARKDOWN,
-            reply_markup=kb
         )
     except Exception as e:
         logger.error("Error in ATH callback: %s", e)

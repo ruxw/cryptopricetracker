@@ -56,7 +56,6 @@ async def _send_coin_stats(update: Update, context: ContextTypes.DEFAULT_TYPE, s
         await context.bot.send_photo(
             chat_id=chat_id,
             photo=image_buf,
-            reply_markup=get_coin_stats_keyboard(symbol)
         )
     except Exception as e:
         logger.error("Error generating coin stats for %s: %s", symbol, e)
