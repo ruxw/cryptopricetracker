@@ -1,6 +1,8 @@
 import asyncio
 import logging
+import os
 import sys
+from aiohttp import web
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
@@ -42,6 +44,22 @@ async def background_market_sync():
         except Exception as e:
             logger.error("Error in background market sync: %s", e)
         await asyncio.sleep(BACKGROUND_SYNC_INTERVAL)
+
+async def start_health_server():
+    """Lightweight HTTP server to satisfy Render Free Web Service health checks."""
+    port = int(os.getenv("PORT", "10000"))
+    async def handle_ping(request):
+        return web.Response(text="Currencing Bot OK", status=200)
+
+    server = web.Application()
+    server.router.add_get("/", handle_ping)
+    server.router.add_get("/health", handle_ping)
+    runner = web.AppRunner(server)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", port)
+    await site.start()
+    logger.info("Render health server active on port %d", port)
+    return runner
 
 def setup_application(token: str):
     """Build and configure the Telegram Bot Application."""
@@ -102,7 +120,15 @@ async def main():
     # 3. Start background sync
     asyncio.create_task(background_market_sync())
 
-    # 4. Build application & start polling
+    # 4. Start health server for Render Free Web Service
+    health_runner = None
+    if os.getenv("PORT") or os.getenv("RENDER"):
+        try:
+            health_runner = await start_health_server()
+        except Exception as e:
+            logger.warning("Could not start HTTP health server: %s", e)
+
+    # 5. Build application & start polling
     app = setup_application(BOT_TOKEN)
 
     # 5. Register BotFather command menu
@@ -139,6 +165,8 @@ async def main():
             while True:
                 await asyncio.sleep(3600)
         finally:
+            if health_runner:
+                await health_runner.cleanup()
             await app.updater.stop()
             await app.stop()
             await crypto_service.close()
