@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual Environment
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment variables & secrets (keep .env.example)
+.env
+.env.*
+!.env.example
+
+# Databases & local state
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Pytest / Testing caches & generated test cards
+.pytest_cache/
+tests/output/
+.coverage
+htmlcov/
+
+# IDE & OS files
+.idea/
+.vscode/
+*.swp
+*.swo
+Thumbs.db
+desktop.ini
+.DS_Store
