@@ -27,6 +27,7 @@ data/
 # Pytest / Testing caches & generated test cards
 .pytest_cache/
 tests/output/
+scratch/
 .coverage
 htmlcov/
 

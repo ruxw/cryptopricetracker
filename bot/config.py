@@ -33,6 +33,7 @@ BRAND_NAME = "Currencing"
 # Telegram Bot Credentials
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
 BOT_USERNAME = sanitize_bot_username(os.getenv("TELEGRAM_BOT_USERNAME", "CurrencingBot"))
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
 
 # Force Join Channels (comma-separated: e.g. @channel1, t.me/channel2, https://t.me/channel3)
 FORCE_JOINS_RAW = os.getenv("FORCE_JOINS", os.getenv("Force_joins", "")).strip()

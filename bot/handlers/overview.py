@@ -1,62 +1,49 @@
 import logging
-from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram import Update
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 
 from bot.middlewares.auth import check_user_authorization
 from bot.services.crypto_api import crypto_service
+from bot.services.cache_manager import get_cached_or_render
 from bot.graphics.templates import render_market_overview
+from bot.emojis import E
 
 logger = logging.getLogger(__name__)
 
-def get_overview_keyboard() -> InlineKeyboardMarkup:
-    """Clean navigation keyboard for market overview."""
-    keyboard = [
-        [
-            InlineKeyboardButton("₿ BTC", callback_data="stats_BTC"),
-            InlineKeyboardButton("Ξ ETH", callback_data="stats_ETH"),
-            InlineKeyboardButton("◎ SOL", callback_data="stats_SOL"),
-        ],
-        [
-            InlineKeyboardButton("💎 GRAM", callback_data="stats_GRAM"),
-            InlineKeyboardButton("Ł LTC", callback_data="stats_LTC"),
-            InlineKeyboardButton("ɱ XMR", callback_data="stats_XMR"),
-        ],
-        [
-            InlineKeyboardButton("✕ XRP", callback_data="stats_XRP"),
-            InlineKeyboardButton("BNB", callback_data="stats_BNB"),
-            InlineKeyboardButton("▲ TRX", callback_data="stats_TRX"),
-        ],
-        [
-            InlineKeyboardButton("🔄 Refresh", callback_data="refresh_overview"),
-            InlineKeyboardButton("💱 Converter", callback_data="nav_convert_menu"),
-        ],
-        [
-            InlineKeyboardButton("ATH Records", callback_data="nav_ath_menu"),
-            InlineKeyboardButton("Main Menu", callback_data="nav_start"),
-        ],
-    ]
-    return InlineKeyboardMarkup(keyboard)
+LOADING_TEXT = "Fetching current crypto prices"
 
 async def overview_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle /overview or /market command."""
+    """Handle /top or /overview command (Top 9 Cryptocurrencies)."""
     if not await check_user_authorization(update, context):
         return
 
     chat_id = update.effective_chat.id
-    status_msg = await context.bot.send_message(chat_id, "⏳ _Generating live Market Overview card..._", parse_mode=ParseMode.MARKDOWN)
+    reply_msg_id = update.effective_message.message_id if update.effective_message else None
+
+    status_msg = await context.bot.send_message(
+        chat_id=chat_id,
+        text=LOADING_TEXT,
+        reply_to_message_id=reply_msg_id
+    )
 
     try:
         overview_data = await crypto_service.get_all_overview_data()
-        image_buf = render_market_overview(overview_data)
+        image_buf = await get_cached_or_render(render_market_overview, overview_data, ttl=15.0)
 
         await context.bot.send_photo(
             chat_id=chat_id,
             photo=image_buf,
+            reply_to_message_id=reply_msg_id
         )
     except Exception as e:
-        logger.error("Error generating market overview: %s", e)
-        await context.bot.send_message(chat_id, "❌ Error generating market overview. Please try again.")
+        logger.error("Error generating Top market overview: %s", e)
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=f"{E('cross')} Error generating Top overview. Please try again.",
+            parse_mode=ParseMode.HTML,
+            reply_to_message_id=reply_msg_id
+        )
     finally:
         try:
             await status_msg.delete()
@@ -64,7 +51,7 @@ async def overview_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             pass
 
 async def overview_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle callback queries for overview."""
+    """Handle callback queries for overview without keyboard clutter."""
     query = update.callback_query
     await query.answer()
 
@@ -77,12 +64,16 @@ async def overview_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             await crypto_service.refresh_market_data(force=True)
 
         overview_data = await crypto_service.get_all_overview_data()
-        image_buf = render_market_overview(overview_data)
+        image_buf = await get_cached_or_render(render_market_overview, overview_data, ttl=15.0)
 
         await context.bot.send_photo(
             chat_id=chat_id,
-            photo=image_buf,
+            photo=image_buf
         )
     except Exception as e:
         logger.error("Error in overview callback: %s", e)
-        await context.bot.send_message(chat_id, "❌ Could not refresh overview. Please try again.")
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=f"{E('cross')} Could not refresh Top overview. Please try again.",
+            parse_mode=ParseMode.HTML
+        )

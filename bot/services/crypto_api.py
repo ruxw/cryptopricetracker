@@ -250,6 +250,10 @@ class CryptoApiService:
                 })
         return result
 
+    def get_fiat_rate(self, fiat_symbol: str) -> float:
+        """Get exchange rate multiplier for a fiat currency against USD."""
+        return self._fiat_rates.get(fiat_symbol.upper(), 1.0)
+
     async def convert(self, crypto_symbol: str, amount: float, fiat_symbol: str = "USD") -> Dict[str, Any]:
         """Convert a cryptocurrency amount to fiat currency."""
         crypto_symbol = crypto_symbol.upper()

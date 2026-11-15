@@ -1,5 +1,5 @@
 import logging
-from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram import Update
 from telegram.constants import ChatType, ParseMode
 from telegram.ext import ContextTypes
 
@@ -7,25 +7,13 @@ from bot.config import BOT_USERNAME
 from bot.database import register_private_start, is_user_verified, record_interaction
 from bot.middlewares.auth import get_verify_keyboard
 from bot.services.force_join import check_user_joined_all, get_force_join_keyboard, get_force_join_message
+from bot.services.ephemeral import send_ephemeral
+from bot.emojis import E, coin_emoji
 
 logger = logging.getLogger(__name__)
 
-def get_main_menu_keyboard(bot_username: str) -> InlineKeyboardMarkup:
-    """Clean minimal main menu keyboard."""
-    keyboard = [
-        [
-            InlineKeyboardButton("Market Overview", callback_data="nav_overview"),
-            InlineKeyboardButton("All-Time Highs", callback_data="nav_ath_menu"),
-        ],
-        [
-            InlineKeyboardButton("Crypto Converter", callback_data="nav_convert_menu"),
-            InlineKeyboardButton("Help", callback_data="nav_help"),
-        ],
-    ]
-    return InlineKeyboardMarkup(keyboard)
-
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle /start command in private and group chats."""
+    """Handle /start command with clean button-free modern interface."""
     user = update.effective_user
     chat = update.effective_chat
     if not user or not chat:
@@ -34,110 +22,126 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     bot_username = context.bot.username or BOT_USERNAME
     args = context.args or []
     is_deep_link_verify = len(args) > 0 and args[0].lower() == "verify"
+    reply_msg_id = update.effective_message.message_id if update.effective_message else None
 
     if chat.type == ChatType.PRIVATE:
-        # Register and verify user in persistent SQLite database
         await register_private_start(user.id, user.username, user.first_name)
         await record_interaction(user.id, "start", " ".join(args))
 
         if is_deep_link_verify:
             greeting = (
-                f"✅ **Verified, {user.first_name}!**\n\n"
+                f"{E('check')} <b>Verified, {user.first_name}!</b>\n\n"
                 "You can now use Currencing everywhere — in private and in groups."
             )
         else:
             greeting = (
-                f"**Currencing** — Crypto prices, charts & conversions.\n\n"
-                f"Hi {user.first_name}! Choose a feature or type a command.\n\n"
-                f"`/btc` `/eth` `/sol` `/top` `/ath btc` `/convert 0.5 btc`"
+                f"{E('fire')} <b>Currencing</b> — Ultra-Fast Crypto Intelligence\n\n"
+                f"Welcome, <b>{user.first_name}</b>!\n\n"
+                f"<b>Top Commands:</b>\n"
+                f"• <code>/top</code> — Top 9 crypto market overview\n"
+                f"• <code>/btc</code> {coin_emoji('BTC')}, <code>/eth</code> {coin_emoji('ETH')}, <code>/sol</code> {coin_emoji('SOL')}\n"
+                f"• <code>/convert $50 to sol</code> {E('convert')}\n"
+                f"• <code>/ath btc</code> {E('ath')}\n"
+                f"• <code>/help</code> — Full command list"
             )
 
-        kb = get_main_menu_keyboard(bot_username)
-        await update.message.reply_text(greeting, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
+        await update.message.reply_text(
+            greeting,
+            parse_mode=ParseMode.HTML,
+            reply_to_message_id=reply_msg_id
+        )
 
     else:
-        # Command received in a group chat
+        # Group chat
         verified = await is_user_verified(user.id)
         if not verified:
             kb = get_verify_keyboard(bot_username)
             await update.message.reply_text(
                 "Please start me in private first to unlock all features! ❤️",
-                reply_markup=kb
+                reply_markup=kb,
+                reply_to_message_id=reply_msg_id
             )
             return
 
         await record_interaction(user.id, "group_start")
         group_msg = (
-            f"⚡ **Currencing in Groups**\n\n"
-            f"Invoke anywhere via `@`:\n"
-            f"• `@{bot_username}` — Market overview\n"
-            f"• `@{bot_username} btc` — Bitcoin live chart\n"
-            f"• `@{bot_username} 0.3 ltc` — Convert 0.3 LTC to USD\n"
-            f"• `@{bot_username} ath eth` — Ethereum ATH"
+            f"{E('gem')} <b>Currencing Active in Group</b>\n\n"
+            f"Use commands directly:\n"
+            f"• <code>/top</code> — Top 9 crypto overview\n"
+            f"• <code>/btc</code>, <code>/eth</code>, <code>/sol</code>, <code>/bnb</code>\n"
+            f"• <code>/convert 100 usd btc</code>\n"
+            f"• <code>/ath sol</code>"
         )
-        kb = InlineKeyboardMarkup([
-            [InlineKeyboardButton("📊 View Market Overview", callback_data="nav_overview")],
-            [InlineKeyboardButton("🔎 Try Inline Now", switch_inline_query_current_chat="")]
-        ])
-        await update.message.reply_text(group_msg, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
+        await update.message.reply_text(
+            group_msg,
+            parse_mode=ParseMode.HTML,
+            reply_to_message_id=reply_msg_id
+        )
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle /help command."""
+    """Handle /help command with ephemeral self-deleting message and custom emojis."""
     user = update.effective_user
-    if not user:
+    chat = update.effective_chat
+    if not user or not chat:
         return
 
     verified = await is_user_verified(user.id)
     bot_username = context.bot.username or BOT_USERNAME
+    reply_msg_id = update.effective_message.message_id if update.effective_message else None
 
     if not verified:
         kb = get_verify_keyboard(bot_username)
         await update.message.reply_text(
             "Please start me in private first to unlock all features! ❤️",
-            reply_markup=kb
+            reply_markup=kb,
+            reply_to_message_id=reply_msg_id
         )
         return
 
     help_text = (
-        "**Currencing — Commands**\n\n"
-        "**Top Coins**\n"
-        "`/btc` `/eth` `/sol` `/bnb` `/xrp` `/ada` `/avax` `/ton` `/trx` `/ltc` `/xmr`\n\n"
-        "**Meme Coins**\n"
-        "`/doge` `/shib` `/pepe`\n\n"
-        "**Market & Analytics**\n"
-        "`/top` — 3×3 market overview\n"
-        "`/crypto <coin>` — any coin by name or ticker\n"
-        "`/ath <coin>` — all-time high record\n"
-        "`/convert 0.5 btc` — 0.5 BTC in USD\n"
-        "`/convert $100 eth` — how much ETH $100 buys\n\n"
-        f"**Inline in groups:** `@{bot_username} btc`"
+        f"{E('help')} <b>Currencing — Command Menu</b>\n\n"
+        f"<b>Market Overview:</b>\n"
+        f"• <code>/top</code> — Top 9 crypto cards (as in Image 5)\n\n"
+        f"<b>Instant Price & 7-Day Chart:</b>\n"
+        f"• <code>/btc</code> {coin_emoji('BTC')} Bitcoin\n"
+        f"• <code>/eth</code> {coin_emoji('ETH')} Ethereum\n"
+        f"• <code>/sol</code> {coin_emoji('SOL')} Solana\n"
+        f"• <code>/ton</code> {coin_emoji('GRAM')} Gram / TON\n"
+        f"• <code>/bnb</code> {coin_emoji('BNB')} BNB\n"
+        f"• <code>/xrp</code> {coin_emoji('XRP')} XRP\n"
+        f"• <code>/ltc</code> {coin_emoji('LTC')} Litecoin\n"
+        f"• <code>/xmr</code> {coin_emoji('XMR')} Monero\n"
+        f"• <code>/trx</code> {coin_emoji('TRX')} Tron\n"
+        f"• <code>/doge</code> {coin_emoji('DOGE')} Dogecoin\n"
+        f"• <code>/shib</code> {coin_emoji('SHIB')} Shiba Inu\n"
+        f"• <code>/pepe</code> {coin_emoji('PEPE')} Pepe\n\n"
+        f"<b>AI Natural Currency Converter:</b>\n"
+        f"• <code>/convert $50 to sol</code>\n"
+        f"• <code>/convert 100 usd btc</code>\n"
+        f"• <code>/convert 0.5 btc in eur</code>\n"
+        f"• <code>/convert 2 eth to usd</code>\n"
+        f"• <code>/convert 1000 doge</code>\n\n"
+        f"<b>All-Time High (ATH):</b>\n"
+        f"• <code>/ath &lt;coin&gt;</code> (e.g. <code>/ath btc</code>, <code>/ath sol</code>)\n\n"
+        f"<b>Any Coin Search:</b>\n"
+        f"• <code>/crypto &lt;coin&gt;</code>"
     )
-    kb = InlineKeyboardMarkup([
-        [
-            InlineKeyboardButton("📊 3×3 Grid", callback_data="nav_overview"),
-            InlineKeyboardButton("📈 Charts", callback_data="nav_stats_menu")
-        ],
-        [
-            InlineKeyboardButton("💱 Converter", callback_data="nav_convert_menu"),
-            InlineKeyboardButton("🏠 Main Menu", callback_data="nav_start")
-        ]
-    ])
-    await update.message.reply_text(help_text, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
+
+    # Send as ephemeral self-deleting message (auto-deletes in 45s to keep chat pristine)
+    await send_ephemeral(
+        bot=context.bot,
+        chat_id=chat.id,
+        text=help_text,
+        auto_delete_seconds=45,
+        reply_to_message_id=reply_msg_id
+    )
 
 async def start_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle callback to return to main menu."""
     query = update.callback_query
     await query.answer()
-    user = update.effective_user
-    bot_username = context.bot.username or BOT_USERNAME
-    text = (
-        f"⚡ **Currencing — Crypto Intelligence & Statistics**\n\n"
-        f"Welcome, **{user.first_name}**! Track live market data, 7-day price charts, "
-        "ATH records, and instant conversions.\n\n"
-        "👇 **Tap an option below:**"
-    )
-    kb = get_main_menu_keyboard(bot_username)
-    await query.message.reply_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
+    if update.effective_chat:
+        await help_command(update, context)
 
 async def check_force_join_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle user clicking '✅ I Have Joined' verification button."""
@@ -149,17 +153,15 @@ async def check_force_join_callback(update: Update, context: ContextTypes.DEFAUL
     all_joined, missing = await check_user_joined_all(context.bot, user.id)
     if all_joined:
         await query.answer("✅ Verified! All required channels joined.", show_alert=True)
-        bot_username = context.bot.username or BOT_USERNAME
         text = (
-            f"🎉 **Access Granted, {user.first_name}!**\n\n"
-            "All features are unlocked! You can now track live markets, view 7-day charts, and convert currencies.\n\n"
-            "👇 **Tap an option below:**"
+            f"🎉 <b>Access Granted, {user.first_name}!</b>\n\n"
+            "All features are unlocked! Track live markets, 7-day charts, and AI conversions.\n\n"
+            "Type <code>/top</code> or <code>/btc</code> to get started!"
         )
-        kb = get_main_menu_keyboard(bot_username)
         try:
-            await query.message.edit_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
+            await query.message.edit_text(text, parse_mode=ParseMode.HTML)
         except Exception:
-            await query.message.reply_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=kb)
+            await query.message.reply_text(text, parse_mode=ParseMode.HTML)
     else:
         await query.answer("❌ You still haven't joined all required channels! Please join them first.", show_alert=True)
         fj_msg = get_force_join_message()

@@ -1,6 +1,8 @@
 import os
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Tuple
 from PIL import Image, ImageFont, ImageDraw
+
+from bot.config import BOT_USERNAME
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 ASSETS_DIR = os.path.join(BASE_DIR, "assets")
@@ -12,9 +14,8 @@ FONT_PATH = os.path.join(FONTS_DIR, "Inter.ttf")
 FALLBACK_FONT_BOLD = r"C:\Windows\Fonts\segoeuib.ttf"
 FALLBACK_FONT_REGULAR = r"C:\Windows\Fonts\segoeui.ttf"
 
-# Supported Cryptocurrencies (Top 20 + Top 3 Memes = 23 coins)
+# Supported Cryptocurrencies
 COINS: Dict[str, Dict[str, Any]] = {
-    # Top 20 Cryptocurrencies
     "BTC": {
         "id": "bitcoin",
         "name": "Bitcoin",
@@ -27,7 +28,7 @@ COINS: Dict[str, Dict[str, Any]] = {
         "id": "ethereum",
         "name": "Ethereum",
         "symbol": "ETH",
-        "color": "#456ee8",
+        "color": "#627eea",
         "decimals": 2,
         "icon": os.path.join(ICONS_DIR, "eth.png")
     },
@@ -35,7 +36,7 @@ COINS: Dict[str, Dict[str, Any]] = {
         "id": "solana",
         "name": "Solana",
         "symbol": "SOL",
-        "color": "#9945ff",
+        "color": "#14f195",
         "decimals": 2,
         "icon": os.path.join(ICONS_DIR, "sol.png")
     },
@@ -51,7 +52,7 @@ COINS: Dict[str, Dict[str, Any]] = {
         "id": "ripple",
         "name": "XRP",
         "symbol": "XRP",
-        "color": "#23292f",
+        "color": "#505862",
         "decimals": 2,
         "icon": os.path.join(ICONS_DIR, "xrp.png")
     },
@@ -143,62 +144,74 @@ FIAT_CURRENCIES: Dict[str, Dict[str, Any]] = {
     "RUB": {"symbol": "₽", "name": "Russian Ruble", "decimals": 2},
 }
 
-# Color Palette
+# High-End Design Colors
 COLORS = {
-    "navy_text": (30, 30, 45),        # #1e1e2d
+    "navy_text": (16, 17, 22),         # Dark charcoal for light badges
     "white": (255, 255, 255),
-    "card_bg": (245, 247, 255, 195),
-    "pill_bg": (255, 255, 255, 245),
-    "pill_border": (255, 255, 255, 180),
-    "green": (16, 185, 129),          # #10b981
-    "red": (225, 59, 59),             # #e13b3b
-    "gray_text": (90, 88, 110),
-    "chart_stroke": (255, 255, 255, 255),
-    "chart_fill_top": (255, 255, 255, 60),
-    "chart_fill_bot": (255, 255, 255, 10),
+    "card_bg": (12, 13, 17, 245),      # Sleek obsidian container
+    "pill_bg": (246, 244, 240, 255),   # Off-white porcelain capsule
+    "pill_border": (255, 255, 255, 200),
+    "green": (0, 230, 118),            # Vibrant neon/mint green
+    "red": (255, 65, 65),              # Vibrant coral red
+    "gray_text": (125, 133, 150),      # Clean slate metadata
+    "chart_stroke_green": (0, 230, 118, 255),
+    "chart_stroke_red": (255, 65, 65, 255),
+    "brand_orange": (245, 132, 16),
 }
 
-_font_cache: Dict[int, ImageFont.FreeTypeFont] = {}
+_font_cache: Dict[Tuple[int, int], ImageFont.FreeTypeFont] = {}
 
-def get_font(size: int, bold: bool = True, weight: str = "bold") -> ImageFont.FreeTypeFont:
+def get_font(size: int, bold: bool = True, weight: Any = "bold") -> ImageFont.FreeTypeFont:
     """
-    Load Inter with proper weight.
-    weight: "regular" | "semibold" | "bold"
-    If the Inter variable font doesn't support named weights, falls back to
-    system Segoe UI bold/regular.
+    Load Inter variable font with exact typography weight (400 to 900) or system fallback.
+    weight: "regular" (400), "medium" (500), "semibold" (600), "bold" (700), "extrabold" (800)
     """
-    weight_map = {"regular": 0, "semibold": 1, "bold": 2}
-    cache_key = size * 10 + weight_map.get(weight, 2 if bold else 0)
+    if isinstance(weight, str):
+        w_map = {
+            "regular": 400, "normal": 400,
+            "medium": 500,
+            "semibold": 600,
+            "bold": 700,
+            "extrabold": 800, "heavy": 800,
+            "black": 900
+        }
+        numeric_weight = w_map.get(weight.lower(), 700 if bold else 400)
+    elif isinstance(weight, (int, float)):
+        numeric_weight = int(weight)
+    else:
+        numeric_weight = 700 if bold else 400
+
+    cache_key = (size, numeric_weight)
     if cache_key in _font_cache:
         return _font_cache[cache_key]
 
-    # Try Inter font (variable font — PIL uses it without axis tuning,
-    # but we can pick bold/regular via the face index or separate files)
     if os.path.exists(FONT_PATH):
         try:
             font = ImageFont.truetype(FONT_PATH, size)
+            font.set_variation_by_axes([14, numeric_weight])
             _font_cache[cache_key] = font
             return font
         except Exception:
             pass
 
     # Fallback to Windows system fonts by weight
-    if weight == "regular":
-        fallback = FALLBACK_FONT_REGULAR
-    else:
-        fallback = FALLBACK_FONT_BOLD
-
+    fallback = FALLBACK_FONT_BOLD if numeric_weight >= 600 else FALLBACK_FONT_REGULAR
     if os.path.exists(fallback):
-        font = ImageFont.truetype(fallback, size)
-        _font_cache[cache_key] = font
-        return font
+        try:
+            font = ImageFont.truetype(fallback, size)
+            _font_cache[cache_key] = font
+            return font
+        except Exception:
+            pass
 
     font = ImageFont.load_default()
     _font_cache[cache_key] = font
     return font
 
-def hex_to_rgb(hex_code: str) -> tuple:
+def hex_to_rgb(hex_code: str) -> Tuple[int, int, int]:
     hex_code = hex_code.lstrip("#")
+    if len(hex_code) == 3:
+        hex_code = "".join(c * 2 for c in hex_code)
     return tuple(int(hex_code[i:i+2], 16) for i in (0, 2, 4))
 
 def format_price(value: float, decimals: Optional[int] = None) -> str:
@@ -227,13 +240,12 @@ def get_fiat_badge(symbol: str, size: int = 40) -> Image.Image:
     """Generate a clean circular fiat symbol badge."""
     badge = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(badge)
-    # White circle with dark outline
     draw.ellipse([1, 1, size - 2, size - 2], fill=(245, 247, 252, 255), outline=(50, 50, 70, 200), width=2)
     font_size = int(size * 0.55)
-    font = get_font(font_size, bold=True)
+    font = get_font(font_size, bold=True, weight="bold")
     bbox = font.getbbox(symbol)
     tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
     tx = (size - tw) // 2 - bbox[0]
     ty = (size - th) // 2 - bbox[1]
-    draw.text((tx, ty), symbol, fill=(30, 30, 45), font=font)
+    draw.text((tx, ty), symbol, fill=(16, 17, 22), font=font)
     return badge
