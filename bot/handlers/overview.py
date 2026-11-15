@@ -6,6 +6,7 @@ from telegram.ext import ContextTypes
 from bot.middlewares.auth import check_user_authorization
 from bot.services.crypto_api import crypto_service
 from bot.services.cache_manager import get_cached_or_render
+from bot.services.sponsored import attach_sponsored_content
 from bot.graphics.templates import render_market_overview
 from bot.emojis import E
 
@@ -30,11 +31,13 @@ async def overview_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     try:
         overview_data = await crypto_service.get_all_overview_data()
         image_buf = await get_cached_or_render(render_market_overview, overview_data, ttl=15.0)
+        _, sp_markup = await attach_sponsored_content()
 
         await context.bot.send_photo(
             chat_id=chat_id,
             photo=image_buf,
-            reply_to_message_id=reply_msg_id
+            reply_to_message_id=reply_msg_id,
+            reply_markup=sp_markup
         )
     except Exception as e:
         logger.error("Error generating Top market overview: %s", e)

@@ -6,7 +6,7 @@ from telegram.constants import ChatType
 from telegram.ext import ContextTypes
 
 from bot.config import GROUP_FALLBACK_MESSAGE, BOT_USERNAME
-from bot.database import is_user_verified
+from bot.database import is_user_verified, register_group, set_group_active
 from bot.middlewares.auth import get_verify_keyboard
 
 logger = logging.getLogger(__name__)
@@ -28,6 +28,9 @@ async def group_fallback_handler(update: Update, context: ContextTypes.DEFAULT_T
     chat = update.effective_chat
     if chat.type not in [ChatType.GROUP, ChatType.SUPERGROUP]:
         return
+
+    # Automatically track deal GC / group in database
+    await register_group(chat.id, chat.title or "Group", chat.username)
 
     user = update.effective_user
     if not user or user.is_bot:
@@ -68,6 +71,9 @@ async def bot_added_to_group_handler(update: Update, context: ContextTypes.DEFAU
     chat = update.effective_chat
     if not chat:
         return
+
+    # Track active group in database
+    await register_group(chat.id, chat.title or "Group", chat.username)
 
     bot_username = context.bot.username or BOT_USERNAME
     welcome_text = (

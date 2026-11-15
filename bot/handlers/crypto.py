@@ -18,6 +18,7 @@ from bot.middlewares.auth import check_user_authorization
 from bot.services.crypto_api import crypto_service
 from bot.services.resolver import resolve_coin
 from bot.services.cache_manager import get_cached_or_render
+from bot.services.sponsored import attach_sponsored_content
 from bot.graphics.templates import render_coin_stats
 from bot.graphics.assets import COINS
 from bot.emojis import coin_emoji, E
@@ -65,10 +66,13 @@ async def _send_coin_stats(update: Update, context: ContextTypes.DEFAULT_TYPE, s
             ttl=15.0
         )
 
+        _, sp_markup = await attach_sponsored_content()
+
         await context.bot.send_photo(
             chat_id=chat_id,
             photo=image_buf,
-            reply_to_message_id=reply_msg_id
+            reply_to_message_id=reply_msg_id,
+            reply_markup=sp_markup
         )
     except Exception as e:
         logger.error("Error generating coin stats for %s: %s", symbol, e)

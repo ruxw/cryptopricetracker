@@ -1,4 +1,6 @@
 import os
+import re
+from typing import Set, Optional
 from dotenv import load_dotenv
 
 # Load environment variables from .env file if present
@@ -29,6 +31,22 @@ def sanitize_bot_username(raw: str) -> str:
 
 # Brand Configuration
 BRAND_NAME = "Currencing"
+
+def parse_owner_ids(raw: str) -> Set[int]:
+    """Parse comma/space separated numeric Telegram owner IDs."""
+    if not raw:
+        return set()
+    return {int(x) for x in re.split(r"[,\s]+", raw.strip()) if x.isdigit()}
+
+BOT_OWNER_IDS: Set[int] = parse_owner_ids(
+    os.getenv("BOT_OWNER_IDS", os.getenv("OWNER_IDS", os.getenv("OWNER_ID", "")))
+)
+
+def is_owner(user_id: Optional[int]) -> bool:
+    """Check if given user id is authorized as bot owner."""
+    if not user_id:
+        return False
+    return user_id in BOT_OWNER_IDS
 
 # Telegram Bot Credentials
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()

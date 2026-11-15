@@ -7,6 +7,7 @@ from bot.middlewares.auth import check_user_authorization
 from bot.services.ai_converter import execute_conversion
 from bot.services.cache_manager import get_cached_or_render
 from bot.services.ephemeral import send_ephemeral
+from bot.services.sponsored import attach_sponsored_content
 from bot.graphics.templates import render_conversion
 from bot.emojis import E, coin_emoji
 
@@ -80,13 +81,15 @@ async def convert_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         c_emoji = coin_emoji(crypto_symbol)
         caption = f"{E('convert')} <b>{summary}</b>"
+        caption, sp_markup = await attach_sponsored_content(caption)
 
         await context.bot.send_photo(
             chat_id=chat_id,
             photo=image_buf,
             caption=caption,
             parse_mode=ParseMode.HTML,
-            reply_to_message_id=reply_msg_id
+            reply_to_message_id=reply_msg_id,
+            reply_markup=sp_markup
         )
     except Exception as e:
         logger.error("Error in AI conversion: %s", e)

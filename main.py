@@ -22,6 +22,9 @@ from bot.handlers.stats import stats_command, stats_callback
 from bot.handlers.ath import ath_command, ath_callback
 from bot.handlers.convert import convert_command, convert_callback
 from bot.handlers.crypto import crypto_command, coin_shortcut, top_command
+from bot.handlers.sponsored import sponsored_command, sponsored_callback
+from bot.handlers.broadcast import broadcast_command, broadcast_callback
+from bot.handlers.owner_messages import owner_message_handler
 from bot.handlers.inline import inline_query_handler
 from bot.handlers.group import group_fallback_handler, bot_added_to_group_handler
 
@@ -63,9 +66,30 @@ async def start_health_server():
 
 def setup_application(token: str):
     """Build and configure the Telegram Bot Application."""
+    from telegram.ext import Application
     app = ApplicationBuilder().token(token).build()
 
-    # Commands
+    # ── Owner-only commands (registered first so they intercept before all else) ──
+    app.add_handler(CommandHandler(["bd", "broadcast"], broadcast_command))
+    app.add_handler(CommandHandler("sponsored", sponsored_command))
+
+    # ── Callback Queries: owner wizards (must be before generic CBQ handlers) ──
+    app.add_handler(CallbackQueryHandler(sponsored_callback, pattern="^sp:"))
+    app.add_handler(CallbackQueryHandler(broadcast_callback, pattern="^bd:"))
+
+    # ── Owner wizard private messages (group=0 → runs before regular handlers) ──
+    async def _owner_msg_wrapper(update, context):
+        """Wraps owner_message_handler; stops propagation if handled."""
+        from telegram.ext import ApplicationHandlerStop
+        if await owner_message_handler(update, context):
+            raise ApplicationHandlerStop()
+
+    app.add_handler(
+        MessageHandler(filters.ChatType.PRIVATE & ~filters.COMMAND, _owner_msg_wrapper),
+        group=0
+    )
+
+    # ── Public Commands ──
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler(["overview", "market"], overview_command))
@@ -87,7 +111,7 @@ def setup_application(token: str):
     # Inline Queries (Group Guest Mode & Everywhere)
     app.add_handler(InlineQueryHandler(inline_query_handler))
 
-    # Callback Queries
+    # ── Public Callback Queries ──
     app.add_handler(CallbackQueryHandler(overview_callback, pattern="^(nav_overview|refresh_overview)$"))
     app.add_handler(CallbackQueryHandler(stats_callback, pattern="^(stats_.*|refresh_stats_.*|nav_stats_menu)$"))
     app.add_handler(CallbackQueryHandler(ath_callback, pattern="^(ath_.*|nav_ath_menu)$"))
@@ -96,8 +120,8 @@ def setup_application(token: str):
     app.add_handler(CallbackQueryHandler(start_callback, pattern="^nav_start$"))
     app.add_handler(CallbackQueryHandler(check_force_join_callback, pattern="^check_force_join$"))
 
-    # Group guest mode fallback & member updates
-    app.add_handler(MessageHandler(filters.ChatType.GROUPS & filters.TEXT, group_fallback_handler))
+    # Group guest mode fallback & member updates (group=1 so owner handler runs first)
+    app.add_handler(MessageHandler(filters.ChatType.GROUPS & filters.TEXT, group_fallback_handler), group=1)
     app.add_handler(ChatMemberHandler(bot_added_to_group_handler, ChatMemberHandler.MY_CHAT_MEMBER))
 
     return app

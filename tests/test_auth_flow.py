@@ -65,6 +65,8 @@ async def run_auth_tests():
     mock_msg.text = "@currencingbot can you trade for me?"
     mock_chat = MagicMock()
     mock_chat.id = -100998877
+    mock_chat.title = "Test Crypto Group"
+    mock_chat.username = "testcryptogroup"
     mock_chat.type = "group"
 
     mock_update_grp = MagicMock()
