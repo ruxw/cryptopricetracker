@@ -13,7 +13,7 @@ from bot.emojis import E, coin_emoji
 
 logger = logging.getLogger(__name__)
 
-LOADING_TEXT = "Fetching current crypto prices"
+LOADING_TEXT = "Checking latest rates..."
 
 _HELP_TEXT = (
     f"{E('convert')} <b>Currencing AI Converter</b>\n\n"

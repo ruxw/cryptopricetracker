@@ -1,5 +1,5 @@
 import logging
-from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram import Update, InlineKeyboardMarkup
 from telegram.constants import ChatType, ParseMode
 from telegram.ext import ContextTypes
 
@@ -7,19 +7,47 @@ from bot.config import BOT_USERNAME
 from bot.database import register_private_start, is_user_verified, record_interaction
 from bot.middlewares.auth import get_verify_keyboard
 from bot.services.force_join import check_user_joined_all, get_force_join_keyboard, get_force_join_message
-from bot.services.ephemeral import send_ephemeral
-from bot.emojis import E, coin_emoji
+from bot.emojis import E, coin_emoji, custom_btn
 
 logger = logging.getLogger(__name__)
 
 def make_start_keyboard(bot_username: str) -> InlineKeyboardMarkup:
-    """Generate aesthetic minimal inline keyboard for /start."""
+    """Generate aesthetic minimal inline keyboard for /start with custom emoji icons."""
     return InlineKeyboardMarkup([
         [
-            InlineKeyboardButton(text="Add bot to chat ↗", url=f"https://t.me/{bot_username}?startgroup=start"),
-            InlineKeyboardButton(text="View Help Menu", callback_data="help:menu")
+            custom_btn("Add bot to chat ↗", url=f"https://t.me/{bot_username}?startgroup=start", icon="group"),
+            custom_btn("View Help Menu", callback_data="help:menu", icon="help")
         ]
     ])
+
+def get_clean_help_text(bot_username: str) -> str:
+    """
+    Return clean formatted help menu text without code tags around commands,
+    with custom emojis, and including all new commands (/daily, /meme).
+    """
+    return (
+        f"{E('currencing')} <b>@{bot_username} Commands</b>\n\n"
+        f"{E('chart')} <b>Prices & Charts:</b>\n"
+        f"• /top — Top cryptos at a glance\n"
+        f"• /crypto &lt;coin&gt; — Live price card for any coin\n"
+        f"• /btc, /eth, /sol, /bnb — Ticker shortcuts\n"
+        f"• /ath &lt;coin&gt; — All-time high for any coin\n"
+        f"• /convert 0.5 btc — Crypto to USD conversion\n"
+        f"• /convert $50 to sol — USD to crypto conversion\n\n"
+        f"{E('meme')} <b>Fun & Meme Commands:</b>\n"
+        f"• /daily — Daily crypto thought & philosophical quote\n"
+        f"• /meme — Daily fun crypto meme & degen truth\n"
+        f"• /satoshi — Historical quotes from Satoshi Nakamoto\n"
+        f"• /cope &lt;coin&gt; — Could be worse — vs the all-time low\n"
+        f"• /panic &lt;coin&gt; — Emergency panic index & calming checklist\n"
+        f"• /wagmi — Today's top rocket market gainers\n"
+        f"• /predict &lt;coin&gt; — 100% expert technical price prediction\n"
+        f"• /didyouknow &lt;coin&gt; — Interesting crypto history and trivia\n"
+        f"• /me — Your personal usage intelligence recap\n"
+        f"• /firstseen &lt;coin&gt; — Price change since you first checked\n"
+        f"• /lookup &lt;coin&gt; — Your last check vs the price now\n"
+        f"• /chatvibe — This chat's most-checked coins"
+    )
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /start command with clean aesthetic minimal interface and force sub check."""
@@ -59,7 +87,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         else:
             greeting = (
                 f"Hey <b>{user_tag}</b>,\n\n"
-                f"🔗 <b>@{bot_username}</b>\n"
+                f"{E('currencing')} <b>@{bot_username}</b>\n"
                 f"Live crypto prices, charts and conversions, plus real-time market intelligence and trading tools.\n\n"
                 f"➡️ /help for the full command list."
             )
@@ -87,11 +115,13 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         group_msg = (
             f"{E('gem')} <b>Currencing Active in Group</b>\n\n"
             f"Use commands directly:\n"
-            f"• <code>/top</code> — Top 9 crypto overview\n"
-            f"• <code>/btc</code>, <code>/eth</code>, <code>/sol</code>, <code>/bnb</code>\n"
-            f"• <code>/convert 100 usd btc</code>\n"
-            f"• <code>/ath sol</code>\n"
-            f"• <code>/chatvibe</code> — Chat's top checked coins"
+            f"• /top — Top 9 crypto overview\n"
+            f"• /btc, /eth, /sol, /bnb\n"
+            f"• /convert 100 usd btc\n"
+            f"• /daily — Daily crypto thought\n"
+            f"• /meme — Daily fun crypto meme\n"
+            f"• /ath sol\n"
+            f"• /chatvibe — Chat's top checked coins"
         )
         await update.message.reply_text(
             group_msg,
@@ -100,7 +130,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         )
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle /help command with ephemeral self-deleting message and custom emojis."""
+    """Handle /help command with permanent message (no self-delete) and clean formatting."""
     user = update.effective_user
     chat = update.effective_chat
     if not user or not chat:
@@ -119,35 +149,14 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         )
         return
 
-    help_text = (
-        f"🔗 <b>@{bot_username} Commands</b>\n\n"
-        f"📊 <b>Prices & Charts:</b>\n"
-        f"• <code>/top</code> — Top cryptos at a glance\n"
-        f"• <code>/crypto &lt;coin&gt;</code> — Live price card for any coin\n"
-        f"• <code>/btc</code>, <code>/eth</code>, <code>/sol</code>, <code>/bnb</code> — Ticker shortcuts\n"
-        f"• <code>/ath &lt;coin&gt;</code> — All-time high for any coin\n"
-        f"• <code>/convert 0.5 btc</code> — Crypto to USD conversion\n"
-        f"• <code>/convert $50 to sol</code> — USD to crypto conversion\n\n"
-        f"👻 <b>Fun & Meme Commands:</b>\n"
-        f"• <code>/cope &lt;coin&gt;</code> — Could be worse — vs the all-time low\n"
-        f"• <code>/panic &lt;coin&gt;</code> — Emergency panic index & calming checklist\n"
-        f"• <code>/wagmi</code> — Today's top rocket market gainers\n"
-        f"• <code>/satoshi</code> — Random quote from Satoshi Nakamoto\n"
-        f"• <code>/predict &lt;coin&gt;</code> — 100% expert technical price prediction\n"
-        f"• <code>/didyouknow &lt;coin&gt;</code> — Interesting crypto history and trivia\n"
-        f"• <code>/me</code> — Your personal usage intelligence recap\n"
-        f"• <code>/firstseen &lt;coin&gt;</code> — Price change since you first checked\n"
-        f"• <code>/lookup &lt;coin&gt;</code> — Your last check vs the price now\n"
-        f"• <code>/chatvibe</code> — This chat's most-checked coins"
-    )
+    help_text = get_clean_help_text(bot_username)
 
-    # Send as ephemeral self-deleting message (auto-deletes in 60s to keep chat pristine)
-    await send_ephemeral(
-        bot=context.bot,
-        chat_id=chat.id,
-        text=help_text,
-        auto_delete_seconds=60,
-        reply_to_message_id=reply_msg_id
+    # Sent directly without the self-deleting footer
+    await update.message.reply_text(
+        help_text,
+        parse_mode=ParseMode.HTML,
+        reply_to_message_id=reply_msg_id,
+        disable_web_page_preview=True
     )
 
 async def start_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -160,30 +169,10 @@ async def start_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         return
 
     bot_username = context.bot.username or BOT_USERNAME
-    help_text = (
-        f"🔗 <b>@{bot_username} Commands</b>\n\n"
-        f"📊 <b>Prices & Charts:</b>\n"
-        f"• <code>/top</code> — Top cryptos at a glance\n"
-        f"• <code>/crypto &lt;coin&gt;</code> — Live price card for any coin\n"
-        f"• <code>/btc</code>, <code>/eth</code>, <code>/sol</code>, <code>/bnb</code> — Ticker shortcuts\n"
-        f"• <code>/ath &lt;coin&gt;</code> — All-time high for any coin\n"
-        f"• <code>/convert 0.5 btc</code> — Crypto to USD conversion\n"
-        f"• <code>/convert $50 to sol</code> — USD to crypto conversion\n\n"
-        f"👻 <b>Fun & Meme Commands:</b>\n"
-        f"• <code>/cope &lt;coin&gt;</code> — Could be worse — vs the all-time low\n"
-        f"• <code>/panic &lt;coin&gt;</code> — Emergency panic index & calming checklist\n"
-        f"• <code>/wagmi</code> — Today's top rocket market gainers\n"
-        f"• <code>/satoshi</code> — Random quote from Satoshi Nakamoto\n"
-        f"• <code>/predict &lt;coin&gt;</code> — 100% expert technical price prediction\n"
-        f"• <code>/didyouknow &lt;coin&gt;</code> — Interesting crypto history and trivia\n"
-        f"• <code>/me</code> — Your personal usage intelligence recap\n"
-        f"• <code>/firstseen &lt;coin&gt;</code> — Price change since you first checked\n"
-        f"• <code>/lookup &lt;coin&gt;</code> — Your last check vs the price now\n"
-        f"• <code>/chatvibe</code> — This chat's most-checked coins"
-    )
+    help_text = get_clean_help_text(bot_username)
 
     back_kb = InlineKeyboardMarkup([
-        [InlineKeyboardButton(text="Add bot to chat ↗", url=f"https://t.me/{bot_username}?startgroup=start")]
+        [custom_btn("Add bot to chat ↗", url=f"https://t.me/{bot_username}?startgroup=start", icon="group")]
     ])
     try:
         await query.message.edit_text(help_text, parse_mode=ParseMode.HTML, reply_markup=back_kb)
@@ -201,9 +190,9 @@ async def check_force_join_callback(update: Update, context: ContextTypes.DEFAUL
     if all_joined:
         await query.answer("✅ Verified! All required channels joined.", show_alert=True)
         text = (
-            f"🎉 <b>Access Granted, {user.first_name}!</b>\n\n"
+            f"{E('check')} <b>Access Granted, {user.first_name}!</b>\n\n"
             "All features are unlocked! Track live markets, 7-day charts, and AI conversions.\n\n"
-            "Type <code>/top</code> or <code>/btc</code> to get started!"
+            "Type /top or /btc to get started!"
         )
         try:
             await query.message.edit_text(text, parse_mode=ParseMode.HTML)

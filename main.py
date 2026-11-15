@@ -16,17 +16,19 @@ from telegram.ext import (
 from bot.config import BOT_TOKEN, BACKGROUND_SYNC_INTERVAL
 from bot.database import init_db
 from bot.services.crypto_api import crypto_service
+from bot.services.daily_delivery import background_daily_delivery_task
 from bot.handlers.start import start_command, help_command, start_callback, check_force_join_callback
 from bot.handlers.overview import overview_command, overview_callback
 from bot.handlers.stats import stats_command, stats_callback
 from bot.handlers.ath import ath_command, ath_callback
 from bot.handlers.convert import convert_command, convert_callback
-from bot.handlers.crypto import crypto_command, coin_shortcut, top_command
+from bot.handlers.crypto import crypto_command, coin_shortcut, top_command, subscribe_callback
 from bot.handlers.meme import (
-    satoshi_command, cope_command, panic_command,
-    wagmi_command, predict_command, didyouknow_command,
-    me_command, firstseen_command, lookup_command,
-    chatvibe_command
+    satoshi_command, daily_command, meme_command,
+    cope_command, panic_command, wagmi_command,
+    predict_command, didyouknow_command, me_command,
+    firstseen_command, lookup_command, chatvibe_command,
+    fun_callback
 )
 from bot.handlers.sponsored import sponsored_command, sponsored_callback
 from bot.handlers.broadcast import broadcast_command, broadcast_callback
@@ -55,14 +57,38 @@ async def background_market_sync():
         await asyncio.sleep(BACKGROUND_SYNC_INTERVAL)
 
 async def start_health_server():
-    """Lightweight HTTP server to satisfy Render Free Web Service health checks."""
+    """Lightweight HTTP server to satisfy Render health checks & serve dynamic card images."""
     port = int(os.getenv("PORT", "10000"))
+
     async def handle_ping(request):
         return web.Response(text="Currencing Bot OK", status=200)
+
+    async def handle_card_png(request):
+        sym = request.match_info.get("symbol", "").upper()
+        from bot.graphics.assets import COINS
+        from bot.services.crypto_api import crypto_service
+        from bot.graphics.templates import render_coin_stats, render_market_overview
+        from bot.services.cache_manager import get_cached_or_render
+        try:
+            if sym == "OVERVIEW":
+                ov_data = await crypto_service.get_all_overview_data()
+                buf = await get_cached_or_render(render_market_overview, ov_data, ttl=15.0)
+                return web.Response(body=buf.getvalue(), content_type="image/png")
+            elif sym in COINS:
+                c = await crypto_service.get_coin_data(sym)
+                buf = await get_cached_or_render(
+                    render_coin_stats,
+                    sym, c["current_price"], c["change_24h"], c["change_7d"], c["sparkline"], ttl=15.0
+                )
+                return web.Response(body=buf.getvalue(), content_type="image/png")
+            return web.Response(status=404, text="Coin not found")
+        except Exception as e:
+            return web.Response(status=500, text=str(e))
 
     server = web.Application()
     server.router.add_get("/", handle_ping)
     server.router.add_get("/health", handle_ping)
+    server.router.add_get("/card/{symbol}.png", handle_card_png)
     runner = web.AppRunner(server)
     await runner.setup()
     site = web.TCPSite(runner, "0.0.0.0", port)
@@ -107,6 +133,8 @@ def setup_application(token: str):
 
     # ── 👻 Fun & Meme Commands ──
     app.add_handler(CommandHandler("satoshi", satoshi_command))
+    app.add_handler(CommandHandler("daily", daily_command))
+    app.add_handler(CommandHandler("meme", meme_command))
     app.add_handler(CommandHandler("cope", cope_command))
     app.add_handler(CommandHandler("panic", panic_command))
     app.add_handler(CommandHandler("wagmi", wagmi_command))
@@ -130,6 +158,8 @@ def setup_application(token: str):
     app.add_handler(InlineQueryHandler(inline_query_handler))
 
     # ── Public Callback Queries ──
+    app.add_handler(CallbackQueryHandler(subscribe_callback, pattern="^sub:"))
+    app.add_handler(CallbackQueryHandler(fun_callback, pattern="^fun:"))
     app.add_handler(CallbackQueryHandler(overview_callback, pattern="^(nav_overview|refresh_overview)$"))
     app.add_handler(CallbackQueryHandler(stats_callback, pattern="^(stats_.*|refresh_stats_.*|nav_stats_menu)$"))
     app.add_handler(CallbackQueryHandler(ath_callback, pattern="^(ath_.*|nav_ath_menu)$"))
@@ -173,9 +203,13 @@ async def main():
     # 5. Build application & start polling
     app = setup_application(BOT_TOKEN)
 
-    # 5. Register BotFather command menu
+    # 6. Start background daily DM delivery task (daily thoughts, memes, and subscribed rates)
+    asyncio.create_task(background_daily_delivery_task(app.bot))
+
+    # 7. Register BotFather command menu (with /start, /daily, /meme included)
     from telegram import BotCommand
     commands = [
+        BotCommand("start",      "Start the bot & open main menu"),
         BotCommand("btc",        "Bitcoin price & 7-day chart"),
         BotCommand("eth",        "Ethereum price & 7-day chart"),
         BotCommand("sol",        "Solana price & 7-day chart"),
@@ -189,6 +223,8 @@ async def main():
         BotCommand("top",        "Market overview – top coins"),
         BotCommand("ath",        "All-time high records"),
         BotCommand("convert",    "Currency converter (e.g. $100 eth)"),
+        BotCommand("daily",      "Daily crypto thought & quote"),
+        BotCommand("meme",       "Daily fun crypto meme & degen humor"),
         BotCommand("satoshi",    "Random quote from Satoshi Nakamoto"),
         BotCommand("cope",       "Gain vs All-Time Low (ATL)"),
         BotCommand("panic",      "Emergency panic index & checklist"),

@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from telegram import Update
+from telegram import Update, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 
@@ -11,14 +11,15 @@ from bot.services.cache_manager import get_cached_or_render
 from bot.services.sponsored import attach_sponsored_content
 from bot.graphics.templates import render_all_time_high
 from bot.graphics.assets import COINS
-from bot.emojis import E, coin_emoji
+from bot.emojis import E, coin_emoji, custom_btn
+from bot.database import save_cached_card_file_id
 
 logger = logging.getLogger(__name__)
 
-LOADING_TEXT = "Fetching current crypto prices"
+LOADING_TEXT = "Checking latest rates..."
 
 async def ath_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle /ath [symbol] command without keyboard buttons."""
+    """Handle /ath [symbol] command."""
     if not await check_user_authorization(update, context):
         return
 
@@ -30,9 +31,9 @@ async def ath_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     symbol = resolve_coin(raw) or raw.upper()
 
     if symbol not in COINS:
-        available_coins = ", ".join(f"<code>{c.lower()}</code>" for c in list(COINS.keys())[:10])
+        available_coins = ", ".join(f"{c.lower()}" for c in list(COINS.keys())[:10])
         await update.message.reply_text(
-            f"{E('cross')} Unknown coin <code>{raw}</code>.\nTry: {available_coins}",
+            f"{E('cross')} Unknown coin <b>{raw}</b>.\nTry: {available_coins}",
             parse_mode=ParseMode.HTML,
             reply_to_message_id=reply_msg_id
         )
@@ -56,14 +57,22 @@ async def ath_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             ath_date,
             ttl=15.0
         )
-        _, sp_markup = await attach_sponsored_content()
 
-        await context.bot.send_photo(
+        kb = InlineKeyboardMarkup([
+            [custom_btn(f"📈 {symbol} 7-Day Chart", callback_data=f"stats_{symbol}", coin=symbol)],
+            [custom_btn(f"🔔 Subscribe to {symbol}", callback_data=f"sub:{symbol}", icon="bell")]
+        ])
+        _, sp_markup = await attach_sponsored_content(reply_markup=kb)
+
+        sent_msg = await context.bot.send_photo(
             chat_id=chat_id,
             photo=image_buf,
             reply_to_message_id=reply_msg_id,
             reply_markup=sp_markup
         )
+        if sent_msg and sent_msg.photo:
+            await save_cached_card_file_id(f"ath_{symbol.lower()}", sent_msg.photo[-1].file_id)
+
     except Exception as e:
         logger.error("Error generating ATH card for %s: %s", symbol, e)
         await context.bot.send_message(
@@ -79,7 +88,7 @@ async def ath_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             pass
 
 async def ath_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Callback query compatibility handler for ATH."""
+    """Callback query handler for ATH."""
     query = update.callback_query
     await query.answer()
     if not await check_user_authorization(update, context):
@@ -103,14 +112,24 @@ async def ath_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             ttl=15.0
         )
 
-        await context.bot.send_photo(
+        kb = InlineKeyboardMarkup([
+            [custom_btn(f"📈 {symbol} 7-Day Chart", callback_data=f"stats_{symbol}", coin=symbol)],
+            [custom_btn(f"🔔 Subscribe to {symbol}", callback_data=f"sub:{symbol}", icon="bell")]
+        ])
+        _, sp_markup = await attach_sponsored_content(reply_markup=kb)
+
+        sent_msg = await context.bot.send_photo(
             chat_id=chat_id,
-            photo=image_buf
+            photo=image_buf,
+            reply_markup=sp_markup
         )
+        if sent_msg and sent_msg.photo:
+            await save_cached_card_file_id(f"ath_{symbol.lower()}", sent_msg.photo[-1].file_id)
+
     except Exception as e:
-        logger.error("Error in ATH callback: %s", e)
+        logger.error("Error in ath callback: %s", e)
         await context.bot.send_message(
             chat_id=chat_id,
-            text=f"{E('cross')} Could not load ATH for <b>{symbol}</b>.",
+            text=f"{E('cross')} Could not load ATH for {symbol}.",
             parse_mode=ParseMode.HTML
         )

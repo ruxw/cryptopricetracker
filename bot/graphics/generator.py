@@ -12,6 +12,23 @@ from bot.graphics.assets import (
 
 BG_TEMPLATE_PATH = os.path.join(ASSETS_DIR, "background.png")
 FOOTER_PATH = os.path.join(ASSETS_DIR, "currencing_footer.png")
+CURRENCING_LOGO_PATH = os.path.join(ASSETS_DIR, "currencing_logo.png")
+
+_icon_cache: dict[int, Image.Image] = {}
+
+def get_currencing_icon(size: int = 24) -> Optional[Image.Image]:
+    """Load and cache the Currencing logo icon for bottom pills."""
+    if size in _icon_cache:
+        return _icon_cache[size]
+    if os.path.exists(CURRENCING_LOGO_PATH):
+        try:
+            im = Image.open(CURRENCING_LOGO_PATH).convert("RGBA")
+            im = im.resize((size, size), Image.Resampling.LANCZOS)
+            _icon_cache[size] = im
+            return im
+        except Exception:
+            pass
+    return None
 
 def get_themed_background(
     width: int = 1024,
@@ -119,8 +136,8 @@ def draw_glass_frame(
     c_draw.rounded_rectangle(card_bbox, radius=card_rad, fill=(12, 13, 17, 246), outline=(255, 255, 255, 22), width=1)
     img = Image.alpha_composite(img, card_layer)
 
-    # 5. Bottom Branded Pill Badge (t.me/CurrencingBot)
-    pill_w = 246
+    # 5. Bottom Branded Pill Badge (t.me/CurrencingBot with Currencing brand icon)
+    pill_w = 276
     pill_h = 48
     px0 = (width - pill_w) // 2
     py0 = gy1 - (pill_h // 2)
@@ -145,7 +162,19 @@ def draw_glass_frame(
     bt_bbox = f_bot.getbbox(bot_pill_text)
     btw = bt_bbox[2] - bt_bbox[0]
     bth = bt_bbox[3] - bt_bbox[1]
-    draw.text((px0 + (pill_w - btw) // 2, py0 + (pill_h - bth) // 2 - bt_bbox[1]), bot_pill_text, fill=(255, 255, 255), font=f_bot)
+
+    logo_icon = get_currencing_icon(24)
+    if logo_icon:
+        spacing = 8
+        content_w = 24 + spacing + btw
+        start_x = px0 + (pill_w - content_w) // 2
+        logo_y = py0 + (pill_h - 24) // 2
+        img.alpha_composite(logo_icon, (start_x, logo_y))
+        text_x = start_x + 24 + spacing
+        text_y = py0 + (pill_h - bth) // 2 - bt_bbox[1]
+        draw.text((text_x, text_y), bot_pill_text, fill=(255, 255, 255), font=f_bot)
+    else:
+        draw.text((px0 + (pill_w - btw) // 2, py0 + (pill_h - bth) // 2 - bt_bbox[1]), bot_pill_text, fill=(255, 255, 255), font=f_bot)
 
     return img, card_bbox
 
@@ -183,10 +212,10 @@ def draw_rounded_rect(
     return img
 
 def draw_footer(img: Image.Image, y_pos: Optional[int] = None) -> None:
-    """Stamp the footer pill at bottom center."""
+    """Stamp the footer pill at bottom center with Currencing brand icon."""
     w, h = img.size
     y = y_pos if y_pos is not None else h - 35
-    pill_w = 236
+    pill_w = 268
     pill_h = 44
     px0 = (w - pill_w) // 2
     py0 = y - (pill_h // 2)
@@ -204,7 +233,19 @@ def draw_footer(img: Image.Image, y_pos: Optional[int] = None) -> None:
     bb = f_bot.getbbox(bot_text)
     bw = bb[2] - bb[0]
     bh = bb[3] - bb[1]
-    draw.text((px0 + (pill_w - bw) // 2, py0 + (pill_h - bh) // 2 - bb[1]), bot_text, fill=(255, 255, 255), font=f_bot)
+
+    logo_icon = get_currencing_icon(22)
+    if logo_icon:
+        spacing = 8
+        content_w = 22 + spacing + bw
+        start_x = px0 + (pill_w - content_w) // 2
+        logo_y = py0 + (pill_h - 22) // 2
+        img.alpha_composite(logo_icon, (start_x, logo_y))
+        text_x = start_x + 22 + spacing
+        text_y = py0 + (pill_h - bh) // 2 - bb[1]
+        draw.text((text_x, text_y), bot_text, fill=(255, 255, 255), font=f_bot)
+    else:
+        draw.text((px0 + (pill_w - bw) // 2, py0 + (pill_h - bh) // 2 - bb[1]), bot_text, fill=(255, 255, 255), font=f_bot)
 
 def smooth_curve(points: List[Tuple[float, float]], num_samples: int = 300) -> List[Tuple[float, float]]:
     """Catmull-Rom spline interpolation for smooth chart curves."""

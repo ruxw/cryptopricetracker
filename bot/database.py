@@ -124,6 +124,40 @@ async def init_db() -> None:
         # Seed singleton sponsored row
         await db.execute("INSERT OR IGNORE INTO sponsored_settings (id) VALUES (1)")
 
+        # Currency subscriptions table for daily price updates in DM
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS subscriptions (
+                user_id INTEGER NOT NULL,
+                symbol TEXT NOT NULL,
+                created_at REAL NOT NULL,
+                PRIMARY KEY (user_id, symbol)
+            )
+        """)
+        await db.execute("""
+            CREATE INDEX IF NOT EXISTS idx_subscriptions_user
+                ON subscriptions(user_id)
+        """)
+
+        # Daily DM delivery tracking (to guarantee users receive daily quotes/memes once per day)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS daily_deliveries (
+                user_id INTEGER NOT NULL,
+                delivery_date TEXT NOT NULL,
+                delivery_type TEXT NOT NULL,
+                created_at REAL NOT NULL,
+                PRIMARY KEY (user_id, delivery_date, delivery_type)
+            )
+        """)
+
+        # Cached Telegram photo file_ids for instant visual cards in inline query mode
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS cached_cards (
+                card_key TEXT PRIMARY KEY,
+                file_id TEXT NOT NULL,
+                updated_at REAL NOT NULL
+            )
+        """)
+
         # Migration: ensure is_active column exists on users
         try:
             await db.execute("ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 1")
@@ -508,3 +542,115 @@ async def get_chat_top_coins(chat_id: int, limit: int = 5) -> List[Dict[str, Any
         """, (chat_id, limit)) as cursor:
             rows = await cursor.fetchall()
             return [dict(r) for r in rows]
+
+# ─── SUBSCRIPTIONS & DAILY DELIVERY HELPERS ───────────────────────────────────
+
+async def add_subscription(user_id: int, symbol: str) -> bool:
+    """Add a daily currency rate subscription for a user in DM."""
+    now = time.time()
+    sym = symbol.upper().strip()
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("""
+            INSERT OR REPLACE INTO subscriptions (user_id, symbol, created_at)
+            VALUES (?, ?, ?)
+        """, (user_id, sym, now))
+        await db.commit()
+    logger.info("User %d subscribed to %s daily updates", user_id, sym)
+    return True
+
+async def remove_subscription(user_id: int, symbol: str) -> bool:
+    """Remove a daily currency rate subscription."""
+    sym = symbol.upper().strip()
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("""
+            DELETE FROM subscriptions WHERE user_id = ? AND symbol = ?
+        """, (user_id, sym))
+        await db.commit()
+    logger.info("User %d unsubscribed from %s daily updates", user_id, sym)
+    return True
+
+async def is_subscribed(user_id: int, symbol: str) -> bool:
+    """Check if user is subscribed to a coin's daily rates."""
+    sym = symbol.upper().strip()
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute("""
+            SELECT 1 FROM subscriptions WHERE user_id = ? AND symbol = ?
+        """, (user_id, sym)) as cursor:
+            return bool(await cursor.fetchone())
+
+async def toggle_subscription(user_id: int, symbol: str) -> bool:
+    """Toggle subscription: returns True if now subscribed, False if unsubscribed."""
+    sym = symbol.upper().strip()
+    if await is_subscribed(user_id, sym):
+        await remove_subscription(user_id, sym)
+        return False
+    else:
+        await add_subscription(user_id, sym)
+        return True
+
+async def get_user_subscriptions(user_id: int) -> List[str]:
+    """Retrieve all currency symbols a user is subscribed to."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute("""
+            SELECT symbol FROM subscriptions WHERE user_id = ? ORDER BY symbol ASC
+        """, (user_id,)) as cursor:
+            rows = await cursor.fetchall()
+            return [r[0] for r in rows]
+
+async def get_all_subscriptions_by_user() -> Dict[int, List[str]]:
+    """Retrieve all subscriptions grouped by active user ID."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute("""
+            SELECT s.user_id, s.symbol FROM subscriptions s
+            JOIN users u ON s.user_id = u.user_id
+            WHERE u.is_active = 1
+            ORDER BY s.user_id, s.symbol
+        """) as cursor:
+            rows = await cursor.fetchall()
+            result: Dict[int, List[str]] = {}
+            for uid, sym in rows:
+                result.setdefault(uid, []).append(sym)
+            return result
+
+async def get_eligible_daily_users(delivery_date: str, delivery_type: str = "daily") -> List[int]:
+    """Retrieve all verified active users who have not yet received today's daily DM."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute("""
+            SELECT u.user_id FROM users u
+            WHERE u.is_verified = 1 AND u.is_active = 1
+            AND u.user_id NOT IN (
+                SELECT user_id FROM daily_deliveries
+                WHERE delivery_date = ? AND delivery_type = ?
+            )
+        """, (delivery_date, delivery_type)) as cursor:
+            rows = await cursor.fetchall()
+            return [r[0] for r in rows]
+
+async def record_daily_delivery(user_id: int, delivery_date: str, delivery_type: str = "daily") -> None:
+    """Record that a user received their daily DM for today."""
+    now = time.time()
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("""
+            INSERT OR IGNORE INTO daily_deliveries (user_id, delivery_date, delivery_type, created_at)
+            VALUES (?, ?, ?, ?)
+        """, (user_id, delivery_date, delivery_type, now))
+        await db.commit()
+
+async def get_cached_card_file_id(card_key: str) -> Optional[str]:
+    """Get Telegram photo file_id for a card key (e.g. 'btc', 'top_overview')."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute("""
+            SELECT file_id FROM cached_cards WHERE card_key = ?
+        """, (card_key.lower(),)) as cursor:
+            row = await cursor.fetchone()
+            return row[0] if row else None
+
+async def save_cached_card_file_id(card_key: str, file_id: str) -> None:
+    """Save or update Telegram photo file_id for a card key."""
+    now = time.time()
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("""
+            INSERT OR REPLACE INTO cached_cards (card_key, file_id, updated_at)
+            VALUES (?, ?, ?)
+        """, (card_key.lower(), file_id, now))
+        await db.commit()

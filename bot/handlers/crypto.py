@@ -10,10 +10,12 @@ Provides:
 """
 
 import logging
-from telegram import Update
+from typing import Optional
+from telegram import Update, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 
+from bot.config import BOT_USERNAME
 from bot.middlewares.auth import check_user_authorization
 from bot.services.crypto_api import crypto_service
 from bot.services.resolver import resolve_coin
@@ -21,21 +23,100 @@ from bot.services.cache_manager import get_cached_or_render
 from bot.services.sponsored import attach_sponsored_content
 from bot.graphics.templates import render_coin_stats
 from bot.graphics.assets import COINS
-from bot.emojis import coin_emoji, E
+from bot.emojis import coin_emoji, E, custom_btn
 from bot.handlers.overview import overview_command
+from bot.database import (
+    is_subscribed, toggle_subscription, is_user_verified,
+    record_coin_lookup, save_cached_card_file_id
+)
 
 logger = logging.getLogger(__name__)
 
-# Single unified loading text across the bot
-LOADING_TEXT = "Fetching current crypto prices"
+# Single unified loading text for currency cards
+LOADING_TEXT = "Checking latest rates..."
 
 _USAGE = (
-    "<b>Usage:</b> <code>/crypto &lt;coin&gt;</code>\n\n"
+    f"{E('currencing')} <b>Usage:</b> /crypto &lt;coin&gt;\n\n"
     "<b>Supported Cryptocurrencies:</b>\n"
-    "• Top: <code>btc</code>, <code>eth</code>, <code>sol</code>, <code>bnb</code>, <code>xrp</code>, <code>doge</code>, <code>ada</code>, <code>avax</code>, <code>ton</code>, <code>trx</code>, <code>ltc</code>, <code>xmr</code>\n"
-    "• Memes: <code>doge</code>, <code>shib</code>, <code>pepe</code>\n\n"
-    "<b>Shortcuts:</b> <code>/btc</code>, <code>/eth</code>, <code>/sol</code>, <code>/top</code>"
+    "• Top: btc, eth, sol, bnb, xrp, doge, ada, avax, ton, trx, ltc, xmr\n"
+    "• Memes: doge, shib, pepe\n\n"
+    "<b>Shortcuts:</b> /btc, /eth, /sol, /top"
 )
+
+async def make_crypto_card_keyboard(symbol: str, user_id: Optional[int] = None) -> InlineKeyboardMarkup:
+    """
+    Build column-oriented action keyboard below every generated crypto card:
+    Row 1: Subscribe / Unsubscribe for daily rates in DM
+    Row 2: 7-Day Chart
+    Row 3: All-Time High Record
+    """
+    sym = symbol.upper()
+    subbed = False
+    if user_id:
+        try:
+            subbed = await is_subscribed(user_id, sym)
+        except Exception:
+            subbed = False
+
+    if subbed:
+        sub_text = f"🔕 Subscribed to {sym} (Tap to Unsub)"
+        sub_icon = "unsub"
+    else:
+        sub_text = f"🔔 Subscribe to {sym} Daily Rates"
+        sub_icon = "bell"
+
+    kb_rows = [
+        [custom_btn(sub_text, callback_data=f"sub:{sym}", icon=sub_icon)],
+        [custom_btn(f"📈 {sym} 7-Day Chart", callback_data=f"stats_{sym}", coin=sym)],
+        [custom_btn(f"🚀 {sym} ATH Record", callback_data=f"ath_{sym}", icon="ath")]
+    ]
+    return InlineKeyboardMarkup(kb_rows)
+
+async def subscribe_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle user clicking the Subscribe/Unsubscribe daily rate button."""
+    query = update.callback_query
+    user = update.effective_user
+    if not user:
+        await query.answer()
+        return
+
+    data = query.data or ""
+    parts = data.split(":")
+    if len(parts) < 2:
+        await query.answer()
+        return
+
+    symbol = parts[1].upper()
+
+    # Check if user has started the bot in DM
+    verified = await is_user_verified(user.id)
+    if not verified:
+        bot_username = context.bot.username or BOT_USERNAME
+        await query.answer(
+            "⚠️ Please start me in private first so I can send your daily updates to your DM!",
+            show_alert=True
+        )
+        return
+
+    now_subbed = await toggle_subscription(user.id, symbol)
+    if now_subbed:
+        await query.answer(
+            f"✅ Subscribed to {symbol} daily rates!\nYou will receive daily rate updates in your DM.",
+            show_alert=True
+        )
+    else:
+        await query.answer(
+            f"🔕 Unsubscribed from {symbol} daily updates.",
+            show_alert=True
+        )
+
+    # Update keyboard on message if possible
+    try:
+        new_kb = await make_crypto_card_keyboard(symbol, user.id)
+        _, sp_markup = await attach_sponsored_content(reply_markup=new_kb)
+        await query.message.edit_reply_markup(reply_markup=sp_markup)
+    except Exception:
+        pass
 
 async def _send_coin_stats(update: Update, context: ContextTypes.DEFAULT_TYPE, symbol: str) -> None:
     """Shared helper: fetch data and send the coin-stats image card in reply to the user."""
@@ -56,11 +137,11 @@ async def _send_coin_stats(update: Update, context: ContextTypes.DEFAULT_TYPE, s
         sparkline_prices = coin_data["sparkline"]
 
         user = update.effective_user
+        user_id = user.id if user else None
         if user:
-            from bot.database import record_coin_lookup
             await record_coin_lookup(user.id, symbol, price, chat_id=update.effective_chat.id)
 
-        # Ultra-fast non-blocking rendering with in-memory caching
+        # Fast non-blocking rendering with in-memory caching
         image_buf = await get_cached_or_render(
             render_coin_stats,
             symbol,
@@ -71,14 +152,20 @@ async def _send_coin_stats(update: Update, context: ContextTypes.DEFAULT_TYPE, s
             ttl=15.0
         )
 
-        _, sp_markup = await attach_sponsored_content()
+        card_kb = await make_crypto_card_keyboard(symbol, user_id)
+        _, sp_markup = await attach_sponsored_content(reply_markup=card_kb)
 
-        await context.bot.send_photo(
+        sent_msg = await context.bot.send_photo(
             chat_id=chat_id,
             photo=image_buf,
             reply_to_message_id=reply_msg_id,
             reply_markup=sp_markup
         )
+
+        # Cache Telegram photo file_id for instant visual card in inline queries
+        if sent_msg and sent_msg.photo:
+            await save_cached_card_file_id(symbol, sent_msg.photo[-1].file_id)
+
     except Exception as e:
         logger.error("Error generating coin stats for %s: %s", symbol, e)
         await context.bot.send_message(

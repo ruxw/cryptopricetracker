@@ -551,9 +551,10 @@ def render_conversion(
 # ==========================================
 
 def render_satoshi_quote(quote: str, date_str: str = "Bitcoin Archives · 2009-2010") -> io.BytesIO:
-    """Render dynamic Satoshi Nakamoto quote card in luminous Bitcoin Gold."""
+    """Render dynamic Satoshi Nakamoto quote card in luminous Bitcoin Gold with coin watermark backdrop."""
     accent_hex = "#f7931a"
-    img = get_themed_background(1024, 640, accent_hex=accent_hex)
+    icon_path = COINS.get("BTC", {}).get("icon")
+    img = get_themed_background(1024, 640, accent_hex=accent_hex, icon_path=icon_path)
     img, card_bbox = draw_glass_frame(img, accent_hex=accent_hex)
     cx0, cy0, cx1, cy1 = card_bbox
     draw = ImageDraw.Draw(img)
@@ -614,9 +615,10 @@ def render_satoshi_quote(quote: str, date_str: str = "Bitcoin Archives · 2009-2
     return buf
 
 def render_cope_card(symbol: str, price: float, atl_price: float, atl_date: str) -> io.BytesIO:
-    """Render /cope card: calculates massive gain vs All-Time Low."""
+    """Render /cope card: calculates massive gain vs All-Time Low with coin watermark backdrop."""
     accent_hex = "#10b981"
-    img = get_themed_background(1024, 640, accent_hex=accent_hex)
+    icon_path = COINS.get(symbol.upper(), {}).get("icon")
+    img = get_themed_background(1024, 640, accent_hex=accent_hex, icon_path=icon_path)
     img, card_bbox = draw_glass_frame(img, accent_hex=accent_hex)
     cx0, cy0, cx1, cy1 = card_bbox
 
@@ -667,9 +669,10 @@ def render_cope_card(symbol: str, price: float, atl_price: float, atl_date: str)
     return buf
 
 def render_panic_card(symbol: str, price: float, change_24h: float) -> io.BytesIO:
-    """Render /panic card: emergency panic meter & calming protocol."""
+    """Render /panic card: emergency panic meter & calming protocol with coin watermark backdrop."""
     accent_hex = "#ef4444"
-    img = get_themed_background(1024, 640, accent_hex=accent_hex)
+    icon_path = COINS.get(symbol.upper(), {}).get("icon")
+    img = get_themed_background(1024, 640, accent_hex=accent_hex, icon_path=icon_path)
     img, card_bbox = draw_glass_frame(img, accent_hex=accent_hex)
     cx0, cy0, cx1, cy1 = card_bbox
 
@@ -711,9 +714,10 @@ def render_panic_card(symbol: str, price: float, change_24h: float) -> io.BytesI
     return buf
 
 def render_wagmi_card(gainers: List[Dict[str, Any]]) -> io.BytesIO:
-    """Render /wagmi card: top rocket market gainers."""
+    """Render /wagmi card: top rocket market gainers with coin watermark backdrop."""
     accent_hex = "#8b5cf6"
-    img = get_themed_background(1024, 640, accent_hex=accent_hex)
+    icon_path = COINS.get("BTC", {}).get("icon")
+    img = get_themed_background(1024, 640, accent_hex=accent_hex, icon_path=icon_path)
     img, card_bbox = draw_glass_frame(img, accent_hex=accent_hex)
     cx0, cy0, cx1, cy1 = card_bbox
 
@@ -758,9 +762,10 @@ def render_wagmi_card(gainers: List[Dict[str, Any]]) -> io.BytesIO:
     return buf
 
 def render_predict_card(symbol: str, price: float, prediction_target: float, predicted_gain: float, timeframe: str = "Next Cycle") -> io.BytesIO:
-    """Render /predict card: 100% technical price prediction."""
+    """Render /predict card: 100% technical price prediction with coin watermark backdrop."""
     accent_hex = "#06b6d4"
-    img = get_themed_background(1024, 640, accent_hex=accent_hex)
+    icon_path = COINS.get(symbol.upper(), {}).get("icon")
+    img = get_themed_background(1024, 640, accent_hex=accent_hex, icon_path=icon_path)
     img, card_bbox = draw_glass_frame(img, accent_hex=accent_hex)
     cx0, cy0, cx1, cy1 = card_bbox
 
@@ -797,9 +802,10 @@ def render_predict_card(symbol: str, price: float, prediction_target: float, pre
     return buf
 
 def render_didyouknow_card(symbol: str, fact_title: str, fact_body: str) -> io.BytesIO:
-    """Render /didyouknow card: crypto trivia & historical lore."""
+    """Render /didyouknow card: crypto trivia & historical lore with coin watermark backdrop."""
     accent_hex = "#3b82f6"
-    img = get_themed_background(1024, 640, accent_hex=accent_hex)
+    icon_path = COINS.get(symbol.upper(), {}).get("icon")
+    img = get_themed_background(1024, 640, accent_hex=accent_hex, icon_path=icon_path)
     img, card_bbox = draw_glass_frame(img, accent_hex=accent_hex)
     cx0, cy0, cx1, cy1 = card_bbox
 
@@ -847,9 +853,10 @@ def render_didyouknow_card(symbol: str, fact_title: str, fact_body: str) -> io.B
     return buf
 
 def render_me_profile_card(user_id: int, username: Optional[str], first_name: str, joined_at: Optional[str], total_lookups: int, favorite_coin: str) -> io.BytesIO:
-    """Render /me user profile & intelligence recap card."""
+    """Render /me user profile & intelligence recap card with luxury watermark backdrop."""
     accent_hex = "#6366f1"
-    img = get_themed_background(1024, 640, accent_hex=accent_hex)
+    icon_path = COINS.get(favorite_coin.upper(), {}).get("icon") or COINS.get("BTC", {}).get("icon")
+    img = get_themed_background(1024, 640, accent_hex=accent_hex, icon_path=icon_path)
     img, card_bbox = draw_glass_frame(img, accent_hex=accent_hex)
     cx0, cy0, cx1, cy1 = card_bbox
 
@@ -900,9 +907,10 @@ def render_me_profile_card(user_id: int, username: Optional[str], first_name: st
     return buf
 
 def render_firstseen_card(symbol: str, first_price: float, current_price: float, first_seen_time: str) -> io.BytesIO:
-    """Render /firstseen card: tracking price change since first check."""
+    """Render /firstseen card: tracking price change since first check with coin watermark backdrop."""
     accent_hex = "#ec4899"
-    img = get_themed_background(1024, 640, accent_hex=accent_hex)
+    icon_path = COINS.get(symbol.upper(), {}).get("icon")
+    img = get_themed_background(1024, 640, accent_hex=accent_hex, icon_path=icon_path)
     img, card_bbox = draw_glass_frame(img, accent_hex=accent_hex)
     cx0, cy0, cx1, cy1 = card_bbox
 
@@ -946,9 +954,12 @@ def render_firstseen_card(symbol: str, first_price: float, current_price: float,
     return buf
 
 def render_lookup_card(symbol: str, last_price: float, current_price: float, last_seen_time: str) -> io.BytesIO:
-    """Render /lookup card: last check vs right now."""
-    accent_hex = "#14b8a6"
-    img = get_themed_background(1024, 640, accent_hex=accent_hex)
+    """Render /lookup card: last check vs right now with coin watermark backdrop."""
+    diff_val = current_price - last_price
+    diff_pct = (diff_val / max(0.000001, last_price)) * 100.0
+    accent_hex = "#10b981" if diff_pct >= 0 else "#ef4444"
+    icon_path = COINS.get(symbol.upper(), {}).get("icon")
+    img = get_themed_background(1024, 640, accent_hex=accent_hex, icon_path=icon_path)
     img, card_bbox = draw_glass_frame(img, accent_hex=accent_hex)
     cx0, cy0, cx1, cy1 = card_bbox
 
@@ -994,9 +1005,10 @@ def render_lookup_card(symbol: str, last_price: float, current_price: float, las
     return buf
 
 def render_chatvibe_card(chat_title: str, top_coins: List[Dict[str, Any]]) -> io.BytesIO:
-    """Render /chatvibe card: group chat's top checked coins & vibe summary."""
+    """Render /chatvibe card: group chat's top checked coins & vibe summary with coin watermark backdrop."""
     accent_hex = "#f59e0b"
-    img = get_themed_background(1024, 640, accent_hex=accent_hex)
+    icon_path = COINS.get("BTC", {}).get("icon")
+    img = get_themed_background(1024, 640, accent_hex=accent_hex, icon_path=icon_path)
     img, card_bbox = draw_glass_frame(img, accent_hex=accent_hex)
     cx0, cy0, cx1, cy1 = card_bbox
 
@@ -1033,6 +1045,126 @@ def render_chatvibe_card(chat_title: str, top_coins: List[Dict[str, Any]]) -> io
 
     f_foot = get_font(15, weight="bold")
     draw.text((cv_bbox[0] + 40, cv_bbox[3] - 40), "COMMUNITY SENTIMENT ENGINE · POWERED BY CURRENCING BOT", fill=(245, 158, 11), font=f_foot)
+
+    buf = io.BytesIO()
+    img.convert("RGB").save(buf, format="PNG", quality=95)
+    buf.seek(0)
+    return buf
+
+def render_daily_quote(quote: str, author: str, source: str = "Daily Crypto Intelligence") -> io.BytesIO:
+    """Render /daily card: inspiring crypto thought in luminous royal violet with luxury watermark."""
+    accent_hex = "#8b5cf6"
+    icon_path = COINS.get("BTC", {}).get("icon")
+    img = get_themed_background(1024, 640, accent_hex=accent_hex, icon_path=icon_path)
+    img, card_bbox = draw_glass_frame(img, accent_hex=accent_hex)
+    cx0, cy0, cx1, cy1 = card_bbox
+    draw = ImageDraw.Draw(img)
+
+    # Header badge
+    pill_w = 360
+    pill_h = 56
+    pill_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    p_draw = ImageDraw.Draw(pill_layer)
+    p_draw.rounded_rectangle((cx0 + 40, cy0 + 36, cx0 + 40 + pill_w, cy0 + 36 + pill_h), radius=28, fill=COLORS["pill_bg"], outline=COLORS["pill_border"], width=1)
+    img.alpha_composite(pill_layer)
+
+    draw = ImageDraw.Draw(img)
+    f_badge = get_font(21, weight="bold")
+    draw.text((cx0 + 64, cy0 + 51), "⚡ DAILY CRYPTO THOUGHT", fill=COLORS["navy_text"], font=f_badge)
+
+    # Date / Source on right
+    f_meta = get_font(15, weight="medium")
+    mb = f_meta.getbbox(source)
+    draw.text((cx1 - 40 - (mb[2] - mb[0]), cy0 + 53), source, fill=COLORS["gray_text"], font=f_meta)
+
+    # Quote block in glass container
+    q_bbox = (cx0 + 40, cy0 + 120, cx1 - 40, cy1 - 40)
+    q_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    qd = ImageDraw.Draw(q_layer)
+    qd.rounded_rectangle(q_bbox, radius=24, fill=(22, 18, 34, 235), outline=(139, 92, 246, 70), width=1)
+    img.alpha_composite(q_layer)
+
+    draw = ImageDraw.Draw(img)
+    f_quote = get_font(25, weight="semibold")
+    words = quote.split()
+    lines = []
+    curr = []
+    max_w = (q_bbox[2] - q_bbox[0]) - 80
+    for w in words:
+        test_line = " ".join(curr + [w])
+        tb = f_quote.getbbox(test_line)
+        if (tb[2] - tb[0]) > max_w and curr:
+            lines.append(" ".join(curr))
+            curr = [w]
+        else:
+            curr.append(w)
+    if curr:
+        lines.append(" ".join(curr))
+
+    qy = q_bbox[1] + 44
+    for line in lines[:7]:
+        draw.text((q_bbox[0] + 40, qy), line, fill=(245, 245, 245), font=f_quote)
+        qy += 42
+
+    f_sub = get_font(18, weight="bold")
+    draw.text((q_bbox[0] + 40, q_bbox[3] - 50), f"— {author}", fill=(167, 139, 250), font=f_sub)
+
+    buf = io.BytesIO()
+    img.convert("RGB").save(buf, format="PNG", quality=95)
+    buf.seek(0)
+    return buf
+
+def render_meme_card(title: str, text: str, punchline: str = "") -> io.BytesIO:
+    """Render /meme card: relatable degen meme & trading truth in emerald green with watermark."""
+    accent_hex = "#10b981"
+    icon_path = COINS.get("DOGE", {}).get("icon") or COINS.get("PEPE", {}).get("icon")
+    img = get_themed_background(1024, 640, accent_hex=accent_hex, icon_path=icon_path)
+    img, card_bbox = draw_glass_frame(img, accent_hex=accent_hex)
+    cx0, cy0, cx1, cy1 = card_bbox
+    draw = ImageDraw.Draw(img)
+
+    # Title Banner
+    f_title = get_font(28, weight="bold")
+    draw.text((cx0 + 40, cy0 + 36), "🐸 CRYPTO MEME & DEGEN LORE", fill=(16, 185, 129), font=f_title)
+
+    f_sub = get_font(16, weight="medium")
+    draw.text((cx0 + 40, cy0 + 78), title, fill=(255, 255, 255), font=f_sub)
+
+    # Content Container
+    m_bbox = (cx0 + 40, cy0 + 116, cx1 - 40, cy1 - 40)
+    m_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    md = ImageDraw.Draw(m_layer)
+    md.rounded_rectangle(m_bbox, radius=24, fill=(16, 28, 22, 235), outline=(16, 185, 129, 70), width=1)
+    img.alpha_composite(m_layer)
+
+    draw = ImageDraw.Draw(img)
+    f_text = get_font(26, weight="semibold")
+    words = text.split()
+    lines = []
+    curr = []
+    max_w = (m_bbox[2] - m_bbox[0]) - 80
+    for w in words:
+        test_line = " ".join(curr + [w])
+        tb = f_text.getbbox(test_line)
+        if (tb[2] - tb[0]) > max_w and curr:
+            lines.append(" ".join(curr))
+            curr = [w]
+        else:
+            curr.append(w)
+    if curr:
+        lines.append(" ".join(curr))
+
+    my = m_bbox[1] + 46
+    for line in lines[:5]:
+        draw.text((m_bbox[0] + 40, my), line, fill=(240, 240, 240), font=f_text)
+        my += 44
+
+    if punchline:
+        f_punch = get_font(20, weight="extrabold")
+        draw.text((m_bbox[0] + 40, m_bbox[3] - 56), punchline, fill=(0, 230, 118), font=f_punch)
+    else:
+        f_foot = get_font(15, weight="bold")
+        draw.text((m_bbox[0] + 40, m_bbox[3] - 44), "DEGEN ARCHIVE · ACCURACY RATING: 100% PAINFULLY TRUE", fill=(16, 185, 129), font=f_foot)
 
     buf = io.BytesIO()
     img.convert("RGB").save(buf, format="PNG", quality=95)
