@@ -93,5 +93,5 @@ async def test_inline_card_generation():
     from telegram import InlineQueryResultCachedPhoto
     assert isinstance(res, InlineQueryResultCachedPhoto)
     assert res.photo_file_id == "TELEGRAM_PHOTO_FILE_ID_123"
-    assert "Bitcoin" in res.caption
-    assert "t.me/CurrencingBot" in res.reply_markup.inline_keyboard[0][0].url
+    assert res.caption is None  # Clean card-only without redundant text caption
+    assert "start=sub_BTC" in res.reply_markup.inline_keyboard[0][0].url

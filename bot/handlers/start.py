@@ -4,7 +4,7 @@ from telegram.constants import ChatType, ParseMode
 from telegram.ext import ContextTypes
 
 from bot.config import BOT_USERNAME
-from bot.database import register_private_start, is_user_verified, record_interaction
+from bot.database import register_private_start, is_user_verified, record_interaction, toggle_subscription
 from bot.middlewares.auth import get_verify_keyboard
 from bot.services.force_join import check_user_joined_all, get_force_join_keyboard, get_force_join_message
 from bot.emojis import E, coin_emoji, custom_btn
@@ -79,7 +79,21 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             return
 
         user_tag = f"@{user.username}" if user.username else user.first_name
-        if is_deep_link_verify:
+        if len(args) > 0 and args[0].lower().startswith("sub_"):
+            sym = args[0][4:].upper()
+            now_subbed = await toggle_subscription(user.id, sym)
+            if now_subbed:
+                greeting = (
+                    f"{E('check')} <b>Subscribed to {sym} Daily Rates!</b>\n\n"
+                    f"You will receive daily rate updates and price changes for <b>{sym}</b> in this chat.\n\n"
+                    f"➡️ Type /top for the market overview or /help for all commands."
+                )
+            else:
+                greeting = (
+                    f"🔕 <b>Unsubscribed from {sym} daily updates.</b>\n\n"
+                    f"You can re-subscribe anytime with <code>/crypto {sym.lower()}</code>."
+                )
+        elif is_deep_link_verify:
             greeting = (
                 f"{E('check')} <b>Verified, {user.first_name}!</b>\n\n"
                 f"Hey <b>{user_tag}</b>, you can now use Currencing everywhere — in private chats and in groups."

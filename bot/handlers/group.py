@@ -36,11 +36,21 @@ async def group_fallback_handler(update: Update, context: ContextTypes.DEFAULT_T
     if not user or user.is_bot:
         return
 
+    # CRITICAL: If the message is ANY bot command (e.g. /ton@CurrencingBot, /btc),
+    # it is already handled by CommandHandler. Never trigger fallback on commands!
+    raw_text = (message.text or message.caption or "").strip()
+    if raw_text.startswith("/"):
+        return
+    if message.entities:
+        for ent in message.entities:
+            if ent.type == "bot_command":
+                return
+
     bot_username = context.bot.username or BOT_USERNAME
     bot_mention = f"@{bot_username.lower()}"
-    text = (message.text or message.caption or "").lower()
+    text = raw_text.lower()
 
-    # Check if this bot is explicitly mentioned
+    # Check if this bot is explicitly mentioned in conversational text
     if bot_mention in text:
         # Check verification first
         verified = await is_user_verified(user.id)
@@ -59,12 +69,16 @@ async def group_fallback_handler(update: Update, context: ContextTypes.DEFAULT_T
             return
         _group_fallback_cooldown[chat.id] = now
 
-        # Send friendly guest mode guide or add-me fallback
+        # Send friendly interactive group guide
         kb = InlineKeyboardMarkup([
-            [InlineKeyboardButton("🔍 Use Guest Mode (Inline)", switch_inline_query_current_chat="")],
-            [InlineKeyboardButton("➕ Add Me as Member / Admin", url=f"https://t.me/{bot_username}?startgroup=true")]
+            [InlineKeyboardButton("📊 Top 9 Overview", callback_data="nav_overview")],
+            [InlineKeyboardButton("🔍 Guest Mode (Inline)", switch_inline_query_current_chat="")]
         ])
-        await message.reply_text(GROUP_FALLBACK_MESSAGE, reply_markup=kb)
+        help_msg = (
+            f"Hey {user.first_name}! 👋\n\n"
+            f"{GROUP_FALLBACK_MESSAGE}"
+        )
+        await message.reply_text(help_msg, reply_markup=kb)
 
 async def bot_added_to_group_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle bot being added as a member or administrator in a group."""

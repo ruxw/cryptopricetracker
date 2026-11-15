@@ -169,7 +169,7 @@ def setup_application(token: str):
     app.add_handler(CallbackQueryHandler(check_force_join_callback, pattern="^check_force_join$"))
 
     # Group guest mode fallback & member updates (group=1 so owner handler runs first)
-    app.add_handler(MessageHandler(filters.ChatType.GROUPS & filters.TEXT, group_fallback_handler), group=1)
+    app.add_handler(MessageHandler(filters.ChatType.GROUPS & filters.TEXT & ~filters.COMMAND, group_fallback_handler), group=1)
     app.add_handler(ChatMemberHandler(bot_added_to_group_handler, ChatMemberHandler.MY_CHAT_MEMBER))
 
     return app

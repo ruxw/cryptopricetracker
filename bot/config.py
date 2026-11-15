@@ -82,6 +82,6 @@ UNVERIFIED_MESSAGE = (
 )
 
 GROUP_FALLBACK_MESSAGE = (
-    "This group requires me to be added before I can chat here. "
-    "Please add me as a member or admin! ❤️"
+    "Hey! 👋 Track any crypto with /crypto <coin> (e.g. /btc, /ton, /sol) "
+    "or use /top for the live market overview! ❤️"
 )

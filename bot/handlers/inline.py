@@ -22,6 +22,7 @@ from bot.services.force_join import check_user_joined_all, get_force_join_channe
 from bot.graphics.assets import COINS, FIAT_CURRENCIES, format_price, format_change
 from bot.middlewares.auth import get_start_deep_link
 from bot.emojis import E, coin_emoji, custom_btn
+from bot.services.sponsored import attach_sponsored_content
 
 logger = logging.getLogger(__name__)
 
@@ -42,29 +43,21 @@ async def build_coin_inline_card(
     chg_str = format_change(chg_val)
     name = COINS.get(sym, {}).get("name", sym)
 
-    caption = (
-        f"{coin_emoji(sym)} <b>{name} ({sym})</b>\n\n"
-        f"• <b>Price:</b> ${p_str} USD\n"
-        f"• <b>24h Change:</b> {chg_str}\n\n"
-        f"{E('currencing')} <i>Powered by Currencing</i>"
-    )
-
+    # Inline Keyboard: Daily Sub button (+ Sponsored button if enabled)
     kb = InlineKeyboardMarkup([
-        [
-            custom_btn(f"{sym} 7-Day Chart", url=f"https://t.me/{bot_username}?start=stats_{sym}", coin=sym),
-            custom_btn(f"{sym} ATH Record", url=f"https://t.me/{bot_username}?start=ath_{sym}", icon="ath")
-        ]
+        [custom_btn(f"Subscribe to {sym} Daily Rates", url=f"https://t.me/{bot_username}?start=sub_{sym}", coin=sym)]
     ])
+    sp_caption, sp_markup = await attach_sponsored_content(reply_markup=kb)
 
-    # 1. Prefer Telegram cached photo file_id
+    # 1. Prefer Telegram cached photo file_id (clean card without text caption)
     cached_file_id = await get_cached_card_file_id(sym)
     if cached_file_id:
         return InlineQueryResultCachedPhoto(
             id=f"coin_{sym.lower()}_{uuid.uuid4().hex[:6]}",
             photo_file_id=cached_file_id,
-            caption=caption,
-            parse_mode=ParseMode.HTML,
-            reply_markup=kb
+            caption=sp_caption,
+            parse_mode=ParseMode.HTML if sp_caption else None,
+            reply_markup=sp_markup
         )
 
     # 2. Prefer Render / public HTTP web service URL
@@ -74,18 +67,25 @@ async def build_coin_inline_card(
             id=f"coin_{sym.lower()}_{uuid.uuid4().hex[:6]}",
             photo_url=card_url,
             thumbnail_url=card_url,
-            caption=caption,
-            parse_mode=ParseMode.HTML,
-            reply_markup=kb
+            caption=sp_caption,
+            parse_mode=ParseMode.HTML if sp_caption else None,
+            reply_markup=sp_markup
         )
 
-    # 3. Fallback to formatted article if neither cached file_id nor public URL is set
+    # 3. Fallback to formatted article only if neither cached file_id nor public URL is set
+    fallback_text = (
+        f"{coin_emoji(sym)} <b>{name} ({sym})</b>\n\n"
+        f"• <b>Price:</b> ${p_str} USD\n"
+        f"• <b>24h Change:</b> {chg_str}\n\n"
+        f"{E('currencing')} <i>Powered by Currencing</i>"
+    )
+    art_caption, art_markup = await attach_sponsored_content(text=fallback_text, reply_markup=kb)
     return InlineQueryResultArticle(
         id=f"coin_{sym.lower()}_{uuid.uuid4().hex[:6]}",
         title=f"{name} ({sym}): ${p_str}",
         description=f"24h: {chg_str}",
-        input_message_content=InputTextMessageContent(caption, parse_mode=ParseMode.HTML),
-        reply_markup=kb
+        input_message_content=InputTextMessageContent(art_caption, parse_mode=ParseMode.HTML),
+        reply_markup=art_markup
     )
 
 async def inline_query_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -211,13 +211,14 @@ async def inline_query_handler(update: Update, context: ContextTypes.DEFAULT_TYP
             ])
 
             cached_ath = await get_cached_card_file_id(f"ath_{sym.lower()}")
+            sp_cap_ath, sp_kb_ath = await attach_sponsored_content(reply_markup=kb)
             if cached_ath:
                 results.append(InlineQueryResultCachedPhoto(
                     id=f"ath_{sym.lower()}_{uuid.uuid4().hex[:6]}",
                     photo_file_id=cached_ath,
-                    caption=caption,
-                    parse_mode=ParseMode.HTML,
-                    reply_markup=kb
+                    caption=sp_cap_ath,
+                    parse_mode=ParseMode.HTML if sp_cap_ath else None,
+                    reply_markup=sp_kb_ath
                 ))
             else:
                 results.append(InlineQueryResultArticle(
@@ -253,13 +254,14 @@ async def inline_query_handler(update: Update, context: ContextTypes.DEFAULT_TYP
             [custom_btn("View Full 3×3 Grid Card", url=f"https://t.me/{bot_username}?start=overview", icon="chart")]
         ])
 
+        sp_cap_ov, sp_kb_ov = await attach_sponsored_content(reply_markup=kb_overview)
         if cached_ov:
             results.append(InlineQueryResultCachedPhoto(
                 id=f"overview_{uuid.uuid4().hex[:6]}",
                 photo_file_id=cached_ov,
-                caption=overview_caption,
-                parse_mode=ParseMode.HTML,
-                reply_markup=kb_overview
+                caption=sp_cap_ov,
+                parse_mode=ParseMode.HTML if sp_cap_ov else None,
+                reply_markup=sp_kb_ov
             ))
         else:
             results.append(InlineQueryResultArticle(
