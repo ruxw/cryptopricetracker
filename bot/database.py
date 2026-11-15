@@ -85,12 +85,58 @@ async def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_broadcast_recipients
                 ON broadcast_recipients(broadcast_id)
         """)
+        # Ensure user_lookups has clean schema with created_at
+        try:
+            async with db.execute("PRAGMA table_info(user_lookups)") as cur:
+                cols = [row[1] for row in await cur.fetchall()]
+                if cols and "created_at" not in cols:
+                    await db.execute("DROP TABLE user_lookups")
+        except Exception:
+            pass
+
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS user_lookups (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                symbol TEXT NOT NULL,
+                price REAL NOT NULL,
+                created_at REAL NOT NULL
+            )
+        """)
+        await db.execute("""
+            CREATE INDEX IF NOT EXISTS idx_user_lookups
+                ON user_lookups(user_id, symbol)
+        """)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS group_lookups (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                chat_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                symbol TEXT NOT NULL,
+                price REAL NOT NULL,
+                created_at REAL NOT NULL
+            )
+        """)
+        await db.execute("""
+            CREATE INDEX IF NOT EXISTS idx_group_lookups
+                ON group_lookups(chat_id, symbol)
+        """)
         # Seed singleton sponsored row
         await db.execute("INSERT OR IGNORE INTO sponsored_settings (id) VALUES (1)")
 
         # Migration: ensure is_active column exists on users
         try:
             await db.execute("ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 1")
+        except Exception:
+            pass
+
+        # Migration: ensure price column exists on lookups if table was created in an older schema
+        try:
+            await db.execute("ALTER TABLE user_lookups ADD COLUMN price REAL DEFAULT 0.0")
+        except Exception:
+            pass
+        try:
+            await db.execute("ALTER TABLE group_lookups ADD COLUMN price REAL DEFAULT 0.0")
         except Exception:
             pass
 
@@ -358,5 +404,107 @@ async def get_broadcast_recipients(broadcast_id: int) -> List[Dict[str, Any]]:
         async with db.execute(
             "SELECT * FROM broadcast_recipients WHERE broadcast_id = ?", (broadcast_id,)
         ) as cursor:
+            rows = await cursor.fetchall()
+            return [dict(r) for r in rows]
+
+# ==========================================
+# Crypto Lookup History & Analytics
+# ==========================================
+
+async def record_coin_lookup(user_id: int, symbol: str, price: float, chat_id: Optional[int] = None) -> None:
+    """Record a crypto price lookup for personal history and chat vibes."""
+    now = time.time()
+    sym = symbol.upper()
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("""
+            INSERT INTO user_lookups (user_id, symbol, price, created_at)
+            VALUES (?, ?, ?, ?)
+        """, (user_id, sym, price, now))
+        if chat_id is not None and chat_id < 0:
+            await db.execute("""
+                INSERT INTO group_lookups (chat_id, user_id, symbol, price, created_at)
+                VALUES (?, ?, ?, ?, ?)
+            """, (chat_id, user_id, sym, price, now))
+        await db.commit()
+
+async def get_user_first_seen(user_id: int, symbol: str) -> Optional[Dict[str, Any]]:
+    """Retrieve the very first time a user checked a specific coin."""
+    sym = symbol.upper()
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("""
+            SELECT price, created_at FROM user_lookups
+            WHERE user_id = ? AND symbol = ?
+            ORDER BY id ASC LIMIT 1
+        """, (user_id, sym)) as cursor:
+            row = await cursor.fetchone()
+            return dict(row) if row else None
+
+async def get_user_last_lookup(user_id: int, symbol: str) -> Optional[Dict[str, Any]]:
+    """Retrieve the previous price lookup for a user (excluding the very latest one if possible)."""
+    sym = symbol.upper()
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("""
+            SELECT price, created_at FROM user_lookups
+            WHERE user_id = ? AND symbol = ?
+            ORDER BY id DESC LIMIT 2
+        """, (user_id, sym)) as cursor:
+            rows = await cursor.fetchall()
+            if not rows:
+                return None
+            if len(rows) > 1:
+                return dict(rows[1])
+            return dict(rows[0])
+
+async def get_user_profile_stats(user_id: int) -> Dict[str, Any]:
+    """Retrieve comprehensive usage recap and intelligence profile for a user."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        # User account info
+        user_info = None
+        async with db.execute("SELECT * FROM users WHERE user_id = ?", (user_id,)) as cursor:
+            row = await cursor.fetchone()
+            if row:
+                user_info = dict(row)
+
+        # Total lookup count
+        total_lookups = 0
+        async with db.execute("SELECT COUNT(*) FROM user_lookups WHERE user_id = ?", (user_id,)) as cursor:
+            r = await cursor.fetchone()
+            total_lookups = r[0] if r else 0
+
+        # Favorite coin
+        fav_coin = "BTC"
+        fav_count = 0
+        async with db.execute("""
+            SELECT symbol, COUNT(*) as c FROM user_lookups
+            WHERE user_id = ?
+            GROUP BY symbol ORDER BY c DESC LIMIT 1
+        """, (user_id,)) as cursor:
+            r = await cursor.fetchone()
+            if r:
+                fav_coin = r["symbol"]
+                fav_count = r["c"]
+
+        return {
+            "user_id": user_id,
+            "username": user_info.get("username") if user_info else None,
+            "first_name": user_info.get("first_name") if user_info else "Trader",
+            "joined_at": user_info.get("private_started_at") if user_info else None,
+            "total_lookups": total_lookups,
+            "favorite_coin": fav_coin,
+            "favorite_count": fav_count
+        }
+
+async def get_chat_top_coins(chat_id: int, limit: int = 5) -> List[Dict[str, Any]]:
+    """Retrieve top checked coins inside a Telegram group."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("""
+            SELECT symbol, COUNT(*) as count FROM group_lookups
+            WHERE chat_id = ?
+            GROUP BY symbol ORDER BY count DESC LIMIT ?
+        """, (chat_id, limit)) as cursor:
             rows = await cursor.fetchall()
             return [dict(r) for r in rows]

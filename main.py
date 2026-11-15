@@ -22,6 +22,12 @@ from bot.handlers.stats import stats_command, stats_callback
 from bot.handlers.ath import ath_command, ath_callback
 from bot.handlers.convert import convert_command, convert_callback
 from bot.handlers.crypto import crypto_command, coin_shortcut, top_command
+from bot.handlers.meme import (
+    satoshi_command, cope_command, panic_command,
+    wagmi_command, predict_command, didyouknow_command,
+    me_command, firstseen_command, lookup_command,
+    chatvibe_command
+)
 from bot.handlers.sponsored import sponsored_command, sponsored_callback
 from bot.handlers.broadcast import broadcast_command, broadcast_callback
 from bot.handlers.owner_messages import owner_message_handler
@@ -99,6 +105,18 @@ def setup_application(token: str):
     app.add_handler(CommandHandler("ath", ath_command))
     app.add_handler(CommandHandler("convert", convert_command))
 
+    # ── 👻 Fun & Meme Commands ──
+    app.add_handler(CommandHandler("satoshi", satoshi_command))
+    app.add_handler(CommandHandler("cope", cope_command))
+    app.add_handler(CommandHandler("panic", panic_command))
+    app.add_handler(CommandHandler("wagmi", wagmi_command))
+    app.add_handler(CommandHandler("predict", predict_command))
+    app.add_handler(CommandHandler("didyouknow", didyouknow_command))
+    app.add_handler(CommandHandler("me", me_command))
+    app.add_handler(CommandHandler("firstseen", firstseen_command))
+    app.add_handler(CommandHandler("lookup", lookup_command))
+    app.add_handler(CommandHandler("chatvibe", chatvibe_command))
+
     # Per-coin shortcuts (14 Coins with Custom Emojis)
     shortcuts = {
         "btc": "BTC", "eth": "ETH", "sol": "SOL", "bnb": "BNB", "xrp": "XRP",
@@ -117,7 +135,7 @@ def setup_application(token: str):
     app.add_handler(CallbackQueryHandler(ath_callback, pattern="^(ath_.*|nav_ath_menu)$"))
     app.add_handler(CallbackQueryHandler(convert_callback, pattern="^(conv_.*|nav_convert_menu)$"))
     app.add_handler(CallbackQueryHandler(help_command, pattern="^nav_help$"))
-    app.add_handler(CallbackQueryHandler(start_callback, pattern="^nav_start$"))
+    app.add_handler(CallbackQueryHandler(start_callback, pattern="^(nav_start|help:menu)$"))
     app.add_handler(CallbackQueryHandler(check_force_join_callback, pattern="^check_force_join$"))
 
     # Group guest mode fallback & member updates (group=1 so owner handler runs first)
@@ -158,20 +176,30 @@ async def main():
     # 5. Register BotFather command menu
     from telegram import BotCommand
     commands = [
-        BotCommand("btc",     "Bitcoin price & 7-day chart"),
-        BotCommand("eth",     "Ethereum price & 7-day chart"),
-        BotCommand("sol",     "Solana price & 7-day chart"),
-        BotCommand("bnb",     "BNB price & 7-day chart"),
-        BotCommand("xrp",     "XRP price & 7-day chart"),
-        BotCommand("doge",    "Dogecoin price & 7-day chart"),
-        BotCommand("ton",     "Toncoin/Gram price & 7-day chart"),
-        BotCommand("shib",    "Shiba Inu price & 7-day chart"),
-        BotCommand("pepe",    "Pepe price & 7-day chart"),
-        BotCommand("crypto",  "Track any of 23+ cryptocurrencies"),
-        BotCommand("top",     "Market overview – top coins"),
-        BotCommand("ath",     "All-time high records"),
-        BotCommand("convert", "Currency converter (e.g. $100 eth)"),
-        BotCommand("help",    "Help & list of all coins"),
+        BotCommand("btc",        "Bitcoin price & 7-day chart"),
+        BotCommand("eth",        "Ethereum price & 7-day chart"),
+        BotCommand("sol",        "Solana price & 7-day chart"),
+        BotCommand("bnb",        "BNB price & 7-day chart"),
+        BotCommand("xrp",        "XRP price & 7-day chart"),
+        BotCommand("doge",       "Dogecoin price & 7-day chart"),
+        BotCommand("ton",        "Toncoin/Gram price & 7-day chart"),
+        BotCommand("shib",       "Shiba Inu price & 7-day chart"),
+        BotCommand("pepe",       "Pepe price & 7-day chart"),
+        BotCommand("crypto",     "Track any of 23+ cryptocurrencies"),
+        BotCommand("top",        "Market overview – top coins"),
+        BotCommand("ath",        "All-time high records"),
+        BotCommand("convert",    "Currency converter (e.g. $100 eth)"),
+        BotCommand("satoshi",    "Random quote from Satoshi Nakamoto"),
+        BotCommand("cope",       "Gain vs All-Time Low (ATL)"),
+        BotCommand("panic",      "Emergency panic index & checklist"),
+        BotCommand("wagmi",      "Today's top rocket gainers"),
+        BotCommand("predict",    "100% technical price prediction"),
+        BotCommand("didyouknow", "Crypto history & trivia"),
+        BotCommand("me",         "Your usage intelligence recap"),
+        BotCommand("firstseen",  "Price change since first check"),
+        BotCommand("lookup",     "Compare last check vs now"),
+        BotCommand("chatvibe",   "This chat's most-checked coins"),
+        BotCommand("help",       "Help & full command menu"),
     ]
 
     logger.info("Currencing Crypto Intelligence & Statistics Bot is now running!")

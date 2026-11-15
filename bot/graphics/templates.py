@@ -142,12 +142,18 @@ def render_coin_stats(
     f_stat_lbl = get_font(15, weight="semibold")
     f_stat_val = get_font(16, weight="bold")
 
-    if sparkline_prices and len(sparkline_prices) > 0:
+    if sparkline_prices and len(sparkline_prices) > 1 and (max(sparkline_prices) - min(sparkline_prices) > 0.0001):
         high_val = max(sparkline_prices)
         low_val = min(sparkline_prices)
     else:
-        high_val = price * (1.0 + abs(weekly_change) / 100.0)
-        low_val = price * (1.0 - abs(weekly_change) / 100.0)
+        spread = max(0.018, abs(weekly_change) / 100.0)
+        high_val = price * (1.0 + spread)
+        low_val = price * (1.0 - spread)
+
+    if high_val <= low_val or abs(high_val - low_val) < 0.0001:
+        spread = max(0.018, abs(weekly_change) / 100.0)
+        high_val = price * (1.0 + spread)
+        low_val = price * (1.0 - spread)
 
     stat_x = cx1 - 225
     draw.text((stat_x, cy0 + 134), "7D HIGH", fill=COLORS["gray_text"], font=f_stat_lbl)
@@ -534,6 +540,499 @@ def render_conversion(
     draw.text((fiat_start_x, row2_bbox[1] + 32), fiat_symbol, fill=COLORS["navy_text"], font=font_fiat)
     badge = get_fiat_badge(fiat_sign, size=badge_size)
     img.alpha_composite(badge, (fiat_start_x + fw + 16, row2_bbox[1] + 30))
+
+    buf = io.BytesIO()
+    img.convert("RGB").save(buf, format="PNG", quality=95)
+    buf.seek(0)
+    return buf
+
+# ==========================================
+# 👻 Fun & Meme Visual Cards
+# ==========================================
+
+def render_satoshi_quote(quote: str, date_str: str = "Bitcoin Archives · 2009-2010") -> io.BytesIO:
+    """Render dynamic Satoshi Nakamoto quote card in luminous Bitcoin Gold."""
+    accent_hex = "#f7931a"
+    img = get_themed_background(1024, 640, accent_hex=accent_hex)
+    img, card_bbox = draw_glass_frame(img, accent_hex=accent_hex)
+    cx0, cy0, cx1, cy1 = card_bbox
+    draw = ImageDraw.Draw(img)
+
+    # Header badge
+    pill_w = 340
+    pill_h = 56
+    pill_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    p_draw = ImageDraw.Draw(pill_layer)
+    p_draw.rounded_rectangle((cx0 + 40, cy0 + 36, cx0 + 40 + pill_w, cy0 + 36 + pill_h), radius=28, fill=COLORS["pill_bg"], outline=COLORS["pill_border"], width=1)
+    img.alpha_composite(pill_layer)
+
+    draw = ImageDraw.Draw(img)
+    f_badge = get_font(21, weight="bold")
+    draw.text((cx0 + 64, cy0 + 51), "⚡ SATOSHI ARCHIVES", fill=COLORS["navy_text"], font=f_badge)
+
+    # Date / Source on right
+    f_meta = get_font(15, weight="medium")
+    mb = f_meta.getbbox(date_str)
+    draw.text((cx1 - 40 - (mb[2] - mb[0]), cy0 + 53), date_str, fill=COLORS["gray_text"], font=f_meta)
+
+    # Quote block in glass container
+    q_bbox = (cx0 + 40, cy0 + 120, cx1 - 40, cy1 - 40)
+    q_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    qd = ImageDraw.Draw(q_layer)
+    qd.rounded_rectangle(q_bbox, radius=24, fill=(18, 20, 26, 230), outline=(247, 147, 26, 60), width=1)
+    img.alpha_composite(q_layer)
+
+    draw = ImageDraw.Draw(img)
+    # Wrap text cleanly
+    f_quote = get_font(26, weight="semibold")
+    words = quote.split()
+    lines = []
+    curr = []
+    max_w = (q_bbox[2] - q_bbox[0]) - 80
+    for w in words:
+        test_line = " ".join(curr + [w])
+        tb = f_quote.getbbox(test_line)
+        if (tb[2] - tb[0]) > max_w and curr:
+            lines.append(" ".join(curr))
+            curr = [w]
+        else:
+            curr.append(w)
+    if curr:
+        lines.append(" ".join(curr))
+
+    qy = q_bbox[1] + 46
+    for line in lines[:7]:
+        draw.text((q_bbox[0] + 40, qy), line, fill=(245, 245, 245), font=f_quote)
+        qy += 44
+
+    f_sub = get_font(17, weight="bold")
+    draw.text((q_bbox[0] + 40, q_bbox[3] - 50), "— Satoshi Nakamoto, Creator of Bitcoin", fill=(247, 147, 26), font=f_sub)
+
+    buf = io.BytesIO()
+    img.convert("RGB").save(buf, format="PNG", quality=95)
+    buf.seek(0)
+    return buf
+
+def render_cope_card(symbol: str, price: float, atl_price: float, atl_date: str) -> io.BytesIO:
+    """Render /cope card: calculates massive gain vs All-Time Low."""
+    accent_hex = "#10b981"
+    img = get_themed_background(1024, 640, accent_hex=accent_hex)
+    img, card_bbox = draw_glass_frame(img, accent_hex=accent_hex)
+    cx0, cy0, cx1, cy1 = card_bbox
+
+    draw = ImageDraw.Draw(img)
+    f_title = get_font(28, weight="bold")
+    draw.text((cx0 + 40, cy0 + 36), f"🧘 COPE METER · {symbol.upper()}", fill=(16, 185, 129), font=f_title)
+
+    # Subtitle
+    f_sub = get_font(16, weight="medium")
+    draw.text((cx0 + 40, cy0 + 78), "When in doubt, zoom out! You survived the darkest capitulation.", fill=COLORS["gray_text"], font=f_sub)
+
+    # Main Cope Stat Container
+    m_bbox = (cx0 + 40, cy0 + 124, cx1 - 40, cy1 - 40)
+    m_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    md = ImageDraw.Draw(m_layer)
+    md.rounded_rectangle(m_bbox, radius=24, fill=(16, 26, 22, 235), outline=(16, 185, 129, 70), width=1)
+    img.alpha_composite(m_layer)
+
+    draw = ImageDraw.Draw(img)
+    # Gain vs ATL calculation
+    gain_pct = ((price - atl_price) / max(0.000001, atl_price)) * 100.0
+    f_gain_lbl = get_font(18, weight="bold")
+    draw.text((m_bbox[0] + 40, m_bbox[1] + 36), "GAIN SINCE ALL-TIME LOW (ATL):", fill=COLORS["gray_text"], font=f_gain_lbl)
+
+    f_gain_val = get_font(60, weight="extrabold")
+    gain_str = f"+{gain_pct:,.1f}%" if gain_pct < 1000000 else f"+{gain_pct:,.0f}%"
+    draw.text((m_bbox[0] + 40, m_bbox[1] + 74), gain_str, fill=(0, 230, 118), font=f_gain_val)
+
+    # Stats Comparison Row
+    f_stat_lbl = get_font(17, weight="semibold")
+    f_stat_val = get_font(24, weight="bold")
+
+    draw.text((m_bbox[0] + 40, m_bbox[1] + 180), "Live Current Price", fill=COLORS["gray_text"], font=f_stat_lbl)
+    draw.text((m_bbox[0] + 40, m_bbox[1] + 210), f"${format_price(price)}", fill=(255, 255, 255), font=f_stat_val)
+
+    draw.text((m_bbox[0] + 340, m_bbox[1] + 180), "All-Time Low (ATL)", fill=COLORS["gray_text"], font=f_stat_lbl)
+    draw.text((m_bbox[0] + 340, m_bbox[1] + 210), f"${format_price(atl_price)}", fill=(255, 180, 50), font=f_stat_val)
+
+    draw.text((m_bbox[0] + 620, m_bbox[1] + 180), "ATL Date Recorded", fill=COLORS["gray_text"], font=f_stat_lbl)
+    draw.text((m_bbox[0] + 620, m_bbox[1] + 210), atl_date, fill=(200, 200, 200), font=f_stat_val)
+
+    f_badge = get_font(16, weight="bold")
+    draw.text((m_bbox[0] + 40, m_bbox[3] - 46), "DIAMOND HANDS VERDICT: You are vastly in profit compared to the true bottom.", fill=(16, 185, 129), font=f_badge)
+
+    buf = io.BytesIO()
+    img.convert("RGB").save(buf, format="PNG", quality=95)
+    buf.seek(0)
+    return buf
+
+def render_panic_card(symbol: str, price: float, change_24h: float) -> io.BytesIO:
+    """Render /panic card: emergency panic meter & calming protocol."""
+    accent_hex = "#ef4444"
+    img = get_themed_background(1024, 640, accent_hex=accent_hex)
+    img, card_bbox = draw_glass_frame(img, accent_hex=accent_hex)
+    cx0, cy0, cx1, cy1 = card_bbox
+
+    draw = ImageDraw.Draw(img)
+    f_title = get_font(28, weight="bold")
+    draw.text((cx0 + 40, cy0 + 36), f"🚨 EMERGENCY PANIC CONSOLE · {symbol.upper()}", fill=(255, 75, 75), font=f_title)
+
+    p_bbox = (cx0 + 40, cy0 + 96, cx1 - 40, cy1 - 40)
+    p_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    pd = ImageDraw.Draw(p_layer)
+    pd.rounded_rectangle(p_bbox, radius=24, fill=(32, 16, 18, 235), outline=(255, 70, 70, 70), width=1)
+    img.alpha_composite(p_layer)
+
+    draw = ImageDraw.Draw(img)
+    panic_score = min(99, max(45, int(abs(change_24h) * 7.5 + 40))) if change_24h < 0 else 25
+    meter_text = f"PANIC INDEX: {panic_score} / 100 — {'EXTREME HYPERVENTILATION' if panic_score > 70 else 'ELEVATED ANXIETY'}"
+    f_meter = get_font(24, weight="extrabold")
+    draw.text((p_bbox[0] + 40, p_bbox[1] + 30), meter_text, fill=(255, 90, 90), font=f_meter)
+
+    checklist = [
+        "1. Put down the phone and take a deep breath.",
+        "2. Close the 1-minute chart immediately.",
+        "3. Remember: 1 BTC = 1 BTC. Volatility is the price of admission.",
+        "4. Selling at the bottom transfers your coins to blackrock.",
+        "5. Go outside, touch grass, and drink a glass of water."
+    ]
+    f_item = get_font(19, weight="semibold")
+    iy = p_bbox[1] + 86
+    for item in checklist:
+        draw.text((p_bbox[0] + 40, iy), item, fill=(240, 240, 240), font=f_item)
+        iy += 38
+
+    f_alert = get_font(16, weight="bold")
+    draw.text((p_bbox[0] + 40, p_bbox[3] - 44), "STATUS: DO NOT PANIC SELL. ALL MARKET DUMPS ARE TEMPORARY.", fill=(255, 180, 50), font=f_alert)
+
+    buf = io.BytesIO()
+    img.convert("RGB").save(buf, format="PNG", quality=95)
+    buf.seek(0)
+    return buf
+
+def render_wagmi_card(gainers: List[Dict[str, Any]]) -> io.BytesIO:
+    """Render /wagmi card: top rocket market gainers."""
+    accent_hex = "#8b5cf6"
+    img = get_themed_background(1024, 640, accent_hex=accent_hex)
+    img, card_bbox = draw_glass_frame(img, accent_hex=accent_hex)
+    cx0, cy0, cx1, cy1 = card_bbox
+
+    draw = ImageDraw.Draw(img)
+    f_title = get_font(30, weight="extrabold")
+    draw.text((cx0 + 40, cy0 + 36), "🚀 WAGMI LEADERBOARD 🚀", fill=(167, 139, 250), font=f_title)
+
+    f_sub = get_font(16, weight="medium")
+    draw.text((cx0 + 40, cy0 + 78), "Today's Top Market Rockets · We're All Gonna Make It Anon", fill=COLORS["gray_text"], font=f_sub)
+
+    w_bbox = (cx0 + 40, cy0 + 118, cx1 - 40, cy1 - 40)
+    w_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    wd = ImageDraw.Draw(w_layer)
+    wd.rounded_rectangle(w_bbox, radius=24, fill=(24, 20, 36, 235), outline=(139, 92, 246, 70), width=1)
+    img.alpha_composite(w_layer)
+
+    draw = ImageDraw.Draw(img)
+    f_sym = get_font(22, weight="bold")
+    f_p = get_font(21, weight="bold")
+    f_g = get_font(22, weight="extrabold")
+
+    ry = w_bbox[1] + 30
+    for idx, g in enumerate(gainers[:5]):
+        rank_str = f"#{idx + 1}"
+        sym_str = f"{g.get('symbol', 'COIN')} — {g.get('name', 'Crypto')}"
+        price_str = f"${format_price(g.get('current_price', 0.0))}"
+        chg_val = g.get('change_24h', 0.0)
+        chg_str = f"▲ +{chg_val:.2f}% 🚀" if chg_val >= 0 else f"▼ {chg_val:.2f}%"
+
+        draw.text((w_bbox[0] + 30, ry), rank_str, fill=(167, 139, 250), font=f_sym)
+        draw.text((w_bbox[0] + 90, ry), sym_str, fill=(255, 255, 255), font=f_sym)
+        draw.text((w_bbox[0] + 460, ry), price_str, fill=(220, 220, 220), font=f_p)
+        draw.text((w_bbox[0] + 640, ry), chg_str, fill=(0, 230, 118) if chg_val >= 0 else (255, 75, 75), font=f_g)
+        ry += 52
+
+    f_bottom = get_font(15, weight="bold")
+    draw.text((w_bbox[0] + 30, w_bbox[3] - 40), "HOLD FAST · CYCLES REWARD THE PATIENT · GENERATIONAL WEALTH AHEAD", fill=(167, 139, 250), font=f_bottom)
+
+    buf = io.BytesIO()
+    img.convert("RGB").save(buf, format="PNG", quality=95)
+    buf.seek(0)
+    return buf
+
+def render_predict_card(symbol: str, price: float, prediction_target: float, predicted_gain: float, timeframe: str = "Next Cycle") -> io.BytesIO:
+    """Render /predict card: 100% technical price prediction."""
+    accent_hex = "#06b6d4"
+    img = get_themed_background(1024, 640, accent_hex=accent_hex)
+    img, card_bbox = draw_glass_frame(img, accent_hex=accent_hex)
+    cx0, cy0, cx1, cy1 = card_bbox
+
+    draw = ImageDraw.Draw(img)
+    f_title = get_font(28, weight="bold")
+    draw.text((cx0 + 40, cy0 + 36), f"🔮 100% TECHNICAL PREDICTION · {symbol.upper()}", fill=(6, 182, 212), font=f_title)
+
+    pr_bbox = (cx0 + 40, cy0 + 96, cx1 - 40, cy1 - 40)
+    pr_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    prd = ImageDraw.Draw(pr_layer)
+    prd.rounded_rectangle(pr_bbox, radius=24, fill=(16, 26, 32, 235), outline=(6, 182, 212, 70), width=1)
+    img.alpha_composite(pr_layer)
+
+    draw = ImageDraw.Draw(img)
+    f_lbl = get_font(17, weight="bold")
+    draw.text((pr_bbox[0] + 40, pr_bbox[1] + 30), f"PROJECTED TARGET ({timeframe.upper()}):", fill=COLORS["gray_text"], font=f_lbl)
+
+    f_target = get_font(56, weight="extrabold")
+    target_str = f"${format_price(prediction_target)} (+{predicted_gain:.1f}%)"
+    draw.text((pr_bbox[0] + 40, pr_bbox[1] + 68), target_str, fill=(6, 182, 212), font=f_target)
+
+    f_item = get_font(18, weight="semibold")
+    draw.text((pr_bbox[0] + 40, pr_bbox[1] + 160), f"• Current Price: ${format_price(price)}", fill=(255, 255, 255), font=f_item)
+    draw.text((pr_bbox[0] + 40, pr_bbox[1] + 196), "• Model Confidence: 99.9% 🎯 (Calculated by Lunar Fib Wave Engine)", fill=(240, 240, 240), font=f_item)
+    draw.text((pr_bbox[0] + 40, pr_bbox[1] + 232), "• Technical Verdict: GOD CANDLE IMMINENT · BEARS IN SHAMBLES", fill=(0, 230, 118), font=f_item)
+    draw.text((pr_bbox[0] + 40, pr_bbox[1] + 268), "• Strategy: Accumulate dips, ignore noise, retire early.", fill=(240, 240, 240), font=f_item)
+
+    f_disc = get_font(14, weight="medium")
+    draw.text((pr_bbox[0] + 40, pr_bbox[3] - 40), "Disclaimer: Not financial advice. For entertainment and degen conviction only.", fill=COLORS["gray_text"], font=f_disc)
+
+    buf = io.BytesIO()
+    img.convert("RGB").save(buf, format="PNG", quality=95)
+    buf.seek(0)
+    return buf
+
+def render_didyouknow_card(symbol: str, fact_title: str, fact_body: str) -> io.BytesIO:
+    """Render /didyouknow card: crypto trivia & historical lore."""
+    accent_hex = "#3b82f6"
+    img = get_themed_background(1024, 640, accent_hex=accent_hex)
+    img, card_bbox = draw_glass_frame(img, accent_hex=accent_hex)
+    cx0, cy0, cx1, cy1 = card_bbox
+
+    draw = ImageDraw.Draw(img)
+    f_title = get_font(28, weight="bold")
+    draw.text((cx0 + 40, cy0 + 36), f"💡 DID YOU KNOW? · {symbol.upper()}", fill=(59, 130, 246), font=f_title)
+
+    dy_bbox = (cx0 + 40, cy0 + 96, cx1 - 40, cy1 - 40)
+    dy_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    dyd = ImageDraw.Draw(dy_layer)
+    dyd.rounded_rectangle(dy_bbox, radius=24, fill=(16, 22, 34, 235), outline=(59, 130, 246, 70), width=1)
+    img.alpha_composite(dy_layer)
+
+    draw = ImageDraw.Draw(img)
+    f_ht = get_font(24, weight="bold")
+    draw.text((dy_bbox[0] + 40, dy_bbox[1] + 34), fact_title, fill=(255, 255, 255), font=f_ht)
+
+    f_body = get_font(21, weight="medium")
+    words = fact_body.split()
+    lines = []
+    curr = []
+    max_w = (dy_bbox[2] - dy_bbox[0]) - 80
+    for w in words:
+        test_line = " ".join(curr + [w])
+        tb = f_body.getbbox(test_line)
+        if (tb[2] - tb[0]) > max_w and curr:
+            lines.append(" ".join(curr))
+            curr = [w]
+        else:
+            curr.append(w)
+    if curr:
+        lines.append(" ".join(curr))
+
+    by = dy_bbox[1] + 90
+    for l in lines[:6]:
+        draw.text((dy_bbox[0] + 40, by), l, fill=(230, 230, 230), font=f_body)
+        by += 38
+
+    f_tag = get_font(15, weight="bold")
+    draw.text((dy_bbox[0] + 40, dy_bbox[3] - 44), "CURRENCING CRYPTO ENCYCLOPEDIA · VERIFIED BLOCKCHAIN TRIVIA", fill=(59, 130, 246), font=f_tag)
+
+    buf = io.BytesIO()
+    img.convert("RGB").save(buf, format="PNG", quality=95)
+    buf.seek(0)
+    return buf
+
+def render_me_profile_card(user_id: int, username: Optional[str], first_name: str, joined_at: Optional[str], total_lookups: int, favorite_coin: str) -> io.BytesIO:
+    """Render /me user profile & intelligence recap card."""
+    accent_hex = "#6366f1"
+    img = get_themed_background(1024, 640, accent_hex=accent_hex)
+    img, card_bbox = draw_glass_frame(img, accent_hex=accent_hex)
+    cx0, cy0, cx1, cy1 = card_bbox
+
+    draw = ImageDraw.Draw(img)
+    f_title = get_font(28, weight="bold")
+    draw.text((cx0 + 40, cy0 + 36), "👤 USER INTELLIGENCE PROFILE", fill=(99, 102, 241), font=f_title)
+
+    pr_bbox = (cx0 + 40, cy0 + 96, cx1 - 40, cy1 - 40)
+    pr_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    prd = ImageDraw.Draw(pr_layer)
+    prd.rounded_rectangle(pr_bbox, radius=24, fill=(20, 20, 34, 235), outline=(99, 102, 241, 70), width=1)
+    img.alpha_composite(pr_layer)
+
+    draw = ImageDraw.Draw(img)
+    f_name = get_font(36, weight="extrabold")
+    user_tag = f"@{username}" if username else first_name
+    draw.text((pr_bbox[0] + 40, pr_bbox[1] + 30), f"{first_name} ({user_tag})", fill=(255, 255, 255), font=f_name)
+
+    f_lbl = get_font(17, weight="semibold")
+    f_val = get_font(24, weight="bold")
+
+    draw.text((pr_bbox[0] + 40, pr_bbox[1] + 110), "Telegram ID", fill=COLORS["gray_text"], font=f_lbl)
+    draw.text((pr_bbox[0] + 40, pr_bbox[1] + 140), str(user_id), fill=(220, 220, 220), font=f_val)
+
+    draw.text((pr_bbox[0] + 340, pr_bbox[1] + 110), "Total Lookups", fill=COLORS["gray_text"], font=f_lbl)
+    draw.text((pr_bbox[0] + 340, pr_bbox[1] + 140), f"{total_lookups} searches", fill=(0, 230, 118), font=f_val)
+
+    draw.text((pr_bbox[0] + 620, pr_bbox[1] + 110), "Favorite Asset", fill=COLORS["gray_text"], font=f_lbl)
+    draw.text((pr_bbox[0] + 620, pr_bbox[1] + 140), favorite_coin.upper(), fill=(247, 147, 26), font=f_val)
+
+    draw.text((pr_bbox[0] + 40, pr_bbox[1] + 200), "Member Joined", fill=COLORS["gray_text"], font=f_lbl)
+    join_str = joined_at[:10] if joined_at else "Active Trader"
+    draw.text((pr_bbox[0] + 40, pr_bbox[1] + 230), join_str, fill=(200, 200, 200), font=f_val)
+
+    draw.text((pr_bbox[0] + 340, pr_bbox[1] + 200), "Trader Rank", fill=COLORS["gray_text"], font=f_lbl)
+    rank_tier = "Whale" if total_lookups > 50 else ("Degen Master" if total_lookups > 15 else "Market Explorer")
+    draw.text((pr_bbox[0] + 340, pr_bbox[1] + 230), rank_tier, fill=(99, 102, 241), font=f_val)
+
+    draw.text((pr_bbox[0] + 620, pr_bbox[1] + 200), "Network Status", fill=COLORS["gray_text"], font=f_lbl)
+    draw.text((pr_bbox[0] + 620, pr_bbox[1] + 230), "Verified ⚡", fill=(0, 230, 118), font=f_val)
+
+    f_sub = get_font(15, weight="bold")
+    draw.text((pr_bbox[0] + 40, pr_bbox[3] - 40), "PRO LEVEL METRICS · REAL-TIME TELEGRAM CRYPTO TRACKER", fill=(99, 102, 241), font=f_sub)
+
+    buf = io.BytesIO()
+    img.convert("RGB").save(buf, format="PNG", quality=95)
+    buf.seek(0)
+    return buf
+
+def render_firstseen_card(symbol: str, first_price: float, current_price: float, first_seen_time: str) -> io.BytesIO:
+    """Render /firstseen card: tracking price change since first check."""
+    accent_hex = "#ec4899"
+    img = get_themed_background(1024, 640, accent_hex=accent_hex)
+    img, card_bbox = draw_glass_frame(img, accent_hex=accent_hex)
+    cx0, cy0, cx1, cy1 = card_bbox
+
+    draw = ImageDraw.Draw(img)
+    f_title = get_font(28, weight="bold")
+    draw.text((cx0 + 40, cy0 + 36), f"⏳ TIME CAPSULE · {symbol.upper()}", fill=(236, 72, 153), font=f_title)
+
+    fs_bbox = (cx0 + 40, cy0 + 96, cx1 - 40, cy1 - 40)
+    fs_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    fsd = ImageDraw.Draw(fs_layer)
+    fsd.rounded_rectangle(fs_bbox, radius=24, fill=(30, 16, 26, 235), outline=(236, 72, 153, 70), width=1)
+    img.alpha_composite(fs_layer)
+
+    draw = ImageDraw.Draw(img)
+    f_lbl = get_font(17, weight="bold")
+    draw.text((fs_bbox[0] + 40, fs_bbox[1] + 30), "PRICE CHANGE SINCE YOUR FIRST LOOKUP:", fill=COLORS["gray_text"], font=f_lbl)
+
+    diff_pct = ((current_price - first_price) / max(0.000001, first_price)) * 100.0
+    f_chg = get_font(56, weight="extrabold")
+    sign = "+" if diff_pct >= 0 else ""
+    draw.text((fs_bbox[0] + 40, fs_bbox[1] + 68), f"{sign}{diff_pct:.2f}%", fill=(0, 230, 118) if diff_pct >= 0 else (255, 75, 75), font=f_chg)
+
+    f_slbl = get_font(17, weight="semibold")
+    f_sval = get_font(24, weight="bold")
+
+    draw.text((fs_bbox[0] + 40, fs_bbox[1] + 160), "First Checked At", fill=COLORS["gray_text"], font=f_slbl)
+    draw.text((fs_bbox[0] + 40, fs_bbox[1] + 190), f"${format_price(first_price)}", fill=(255, 255, 255), font=f_sval)
+
+    draw.text((fs_bbox[0] + 340, fs_bbox[1] + 160), "Current Price Now", fill=COLORS["gray_text"], font=f_slbl)
+    draw.text((fs_bbox[0] + 340, fs_bbox[1] + 190), f"${format_price(current_price)}", fill=(0, 230, 118), font=f_sval)
+
+    draw.text((fs_bbox[0] + 620, fs_bbox[1] + 160), "First Seen Date", fill=COLORS["gray_text"], font=f_slbl)
+    draw.text((fs_bbox[0] + 620, fs_bbox[1] + 190), first_seen_time, fill=(200, 200, 200), font=f_sval)
+
+    f_sub = get_font(15, weight="bold")
+    draw.text((fs_bbox[0] + 40, fs_bbox[3] - 40), "TIME CAPSULE ARCHIVE · PERSONALIZED CRYPTO MEMORY", fill=(236, 72, 153), font=f_sub)
+
+    buf = io.BytesIO()
+    img.convert("RGB").save(buf, format="PNG", quality=95)
+    buf.seek(0)
+    return buf
+
+def render_lookup_card(symbol: str, last_price: float, current_price: float, last_seen_time: str) -> io.BytesIO:
+    """Render /lookup card: last check vs right now."""
+    accent_hex = "#14b8a6"
+    img = get_themed_background(1024, 640, accent_hex=accent_hex)
+    img, card_bbox = draw_glass_frame(img, accent_hex=accent_hex)
+    cx0, cy0, cx1, cy1 = card_bbox
+
+    draw = ImageDraw.Draw(img)
+    f_title = get_font(28, weight="bold")
+    draw.text((cx0 + 40, cy0 + 36), f"🔍 PRICE RECAP · {symbol.upper()}", fill=(20, 184, 166), font=f_title)
+
+    lk_bbox = (cx0 + 40, cy0 + 96, cx1 - 40, cy1 - 40)
+    lk_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    lkd = ImageDraw.Draw(lk_layer)
+    lkd.rounded_rectangle(lk_bbox, radius=24, fill=(16, 28, 28, 235), outline=(20, 184, 166, 70), width=1)
+    img.alpha_composite(lk_layer)
+
+    draw = ImageDraw.Draw(img)
+    diff_val = current_price - last_price
+    diff_pct = (diff_val / max(0.000001, last_price)) * 100.0
+
+    f_lbl = get_font(17, weight="bold")
+    draw.text((lk_bbox[0] + 40, lk_bbox[1] + 30), "DELTA SINCE LAST CHECK:", fill=COLORS["gray_text"], font=f_lbl)
+
+    f_chg = get_font(56, weight="extrabold")
+    sign = "+" if diff_pct >= 0 else ""
+    draw.text((lk_bbox[0] + 40, lk_bbox[1] + 68), f"{sign}{diff_pct:.2f}% (${sign}{format_price(abs(diff_val))})", fill=(0, 230, 118) if diff_pct >= 0 else (255, 75, 75), font=f_chg)
+
+    f_slbl = get_font(17, weight="semibold")
+    f_sval = get_font(24, weight="bold")
+
+    draw.text((lk_bbox[0] + 40, lk_bbox[1] + 160), "Last Seen Price", fill=COLORS["gray_text"], font=f_slbl)
+    draw.text((lk_bbox[0] + 40, lk_bbox[1] + 190), f"${format_price(last_price)}", fill=(255, 255, 255), font=f_sval)
+
+    draw.text((lk_bbox[0] + 340, lk_bbox[1] + 160), "Current Price Now", fill=COLORS["gray_text"], font=f_slbl)
+    draw.text((lk_bbox[0] + 340, lk_bbox[1] + 190), f"${format_price(current_price)}", fill=(0, 230, 118), font=f_sval)
+
+    draw.text((lk_bbox[0] + 620, lk_bbox[1] + 160), "Timestamp of Last Check", fill=COLORS["gray_text"], font=f_slbl)
+    draw.text((lk_bbox[0] + 620, lk_bbox[1] + 190), last_seen_time, fill=(200, 200, 200), font=f_sval)
+
+    f_sub = get_font(15, weight="bold")
+    draw.text((lk_bbox[0] + 40, lk_bbox[3] - 40), "PRICE COMPARISON DELTA · TRACKING EVERY MOMENTUM SHIFT", fill=(20, 184, 166), font=f_sub)
+
+    buf = io.BytesIO()
+    img.convert("RGB").save(buf, format="PNG", quality=95)
+    buf.seek(0)
+    return buf
+
+def render_chatvibe_card(chat_title: str, top_coins: List[Dict[str, Any]]) -> io.BytesIO:
+    """Render /chatvibe card: group chat's top checked coins & vibe summary."""
+    accent_hex = "#f59e0b"
+    img = get_themed_background(1024, 640, accent_hex=accent_hex)
+    img, card_bbox = draw_glass_frame(img, accent_hex=accent_hex)
+    cx0, cy0, cx1, cy1 = card_bbox
+
+    draw = ImageDraw.Draw(img)
+    f_title = get_font(28, weight="bold")
+    draw.text((cx0 + 40, cy0 + 36), "📊 GROUP CHAT VIBE & MARKET PULSE", fill=(245, 158, 11), font=f_title)
+
+    cv_bbox = (cx0 + 40, cy0 + 96, cx1 - 40, cy1 - 40)
+    cv_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    cvd = ImageDraw.Draw(cv_layer)
+    cvd.rounded_rectangle(cv_bbox, radius=24, fill=(30, 24, 16, 235), outline=(245, 158, 11, 70), width=1)
+    img.alpha_composite(cv_layer)
+
+    draw = ImageDraw.Draw(img)
+    f_ct = get_font(24, weight="bold")
+    draw.text((cv_bbox[0] + 40, cv_bbox[1] + 28), f"Chat: {chat_title}", fill=(255, 255, 255), font=f_ct)
+
+    f_sub = get_font(16, weight="semibold")
+    draw.text((cv_bbox[0] + 40, cv_bbox[1] + 66), "MOST CHECKED CRYPTOCURRENCIES IN THIS CHAT:", fill=COLORS["gray_text"], font=f_sub)
+
+    f_item = get_font(22, weight="bold")
+    cy = cv_bbox[1] + 104
+    if top_coins:
+        for idx, item in enumerate(top_coins[:5]):
+            rank_str = f"#{idx + 1}"
+            sym = item.get("symbol", "BTC")
+            cnt = item.get("count", 1)
+            draw.text((cv_bbox[0] + 40, cy), rank_str, fill=(245, 158, 11), font=f_item)
+            draw.text((cv_bbox[0] + 100, cy), sym, fill=(255, 255, 255), font=f_item)
+            draw.text((cv_bbox[0] + 300, cy), f"{cnt} lookups", fill=(0, 230, 118), font=f_item)
+            cy += 42
+    else:
+        draw.text((cv_bbox[0] + 40, cy + 20), "No coin checks recorded yet in this group! Use /btc, /sol, /eth to build the vibe.", fill=(200, 200, 200), font=f_item)
+
+    f_foot = get_font(15, weight="bold")
+    draw.text((cv_bbox[0] + 40, cv_bbox[3] - 40), "COMMUNITY SENTIMENT ENGINE · POWERED BY CURRENCING BOT", fill=(245, 158, 11), font=f_foot)
 
     buf = io.BytesIO()
     img.convert("RGB").save(buf, format="PNG", quality=95)

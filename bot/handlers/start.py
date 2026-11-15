@@ -1,5 +1,5 @@
 import logging
-from telegram import Update
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.constants import ChatType, ParseMode
 from telegram.ext import ContextTypes
 
@@ -12,8 +12,17 @@ from bot.emojis import E, coin_emoji
 
 logger = logging.getLogger(__name__)
 
+def make_start_keyboard(bot_username: str) -> InlineKeyboardMarkup:
+    """Generate aesthetic minimal inline keyboard for /start."""
+    return InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton(text="Add bot to chat ↗", url=f"https://t.me/{bot_username}?startgroup=start"),
+            InlineKeyboardButton(text="View Help Menu", callback_data="help:menu")
+        ]
+    ])
+
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle /start command with clean button-free modern interface."""
+    """Handle /start command with clean aesthetic minimal interface and force sub check."""
     user = update.effective_user
     chat = update.effective_chat
     if not user or not chat:
@@ -28,26 +37,37 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         await register_private_start(user.id, user.username, user.first_name)
         await record_interaction(user.id, "start", " ".join(args))
 
+        # Check Force Sub if configured
+        all_joined, missing = await check_user_joined_all(context.bot, user.id)
+        if not all_joined:
+            text = get_force_join_message()
+            kb = get_force_join_keyboard(missing)
+            await update.message.reply_text(
+                text,
+                reply_markup=kb,
+                parse_mode=ParseMode.MARKDOWN,
+                reply_to_message_id=reply_msg_id
+            )
+            return
+
+        user_tag = f"@{user.username}" if user.username else user.first_name
         if is_deep_link_verify:
             greeting = (
                 f"{E('check')} <b>Verified, {user.first_name}!</b>\n\n"
-                "You can now use Currencing everywhere — in private and in groups."
+                f"Hey <b>{user_tag}</b>, you can now use Currencing everywhere — in private chats and in groups."
             )
         else:
             greeting = (
-                f"{E('fire')} <b>Currencing</b> — Ultra-Fast Crypto Intelligence\n\n"
-                f"Welcome, <b>{user.first_name}</b>!\n\n"
-                f"<b>Top Commands:</b>\n"
-                f"• <code>/top</code> — Top 9 crypto market overview\n"
-                f"• <code>/btc</code> {coin_emoji('BTC')}, <code>/eth</code> {coin_emoji('ETH')}, <code>/sol</code> {coin_emoji('SOL')}\n"
-                f"• <code>/convert $50 to sol</code> {E('convert')}\n"
-                f"• <code>/ath btc</code> {E('ath')}\n"
-                f"• <code>/help</code> — Full command list"
+                f"Hey <b>{user_tag}</b>,\n\n"
+                f"🔗 <b>@{bot_username}</b>\n"
+                f"Live crypto prices, charts and conversions, plus real-time market intelligence and trading tools.\n\n"
+                f"➡️ /help for the full command list."
             )
 
         await update.message.reply_text(
             greeting,
             parse_mode=ParseMode.HTML,
+            reply_markup=make_start_keyboard(bot_username),
             reply_to_message_id=reply_msg_id
         )
 
@@ -70,7 +90,8 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             f"• <code>/top</code> — Top 9 crypto overview\n"
             f"• <code>/btc</code>, <code>/eth</code>, <code>/sol</code>, <code>/bnb</code>\n"
             f"• <code>/convert 100 usd btc</code>\n"
-            f"• <code>/ath sol</code>"
+            f"• <code>/ath sol</code>\n"
+            f"• <code>/chatvibe</code> — Chat's top checked coins"
         )
         await update.message.reply_text(
             group_msg,
@@ -99,49 +120,75 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         return
 
     help_text = (
-        f"{E('help')} <b>Currencing — Command Menu</b>\n\n"
-        f"<b>Market Overview:</b>\n"
-        f"• <code>/top</code> — Top 9 crypto cards (as in Image 5)\n\n"
-        f"<b>Instant Price & 7-Day Chart:</b>\n"
-        f"• <code>/btc</code> {coin_emoji('BTC')} Bitcoin\n"
-        f"• <code>/eth</code> {coin_emoji('ETH')} Ethereum\n"
-        f"• <code>/sol</code> {coin_emoji('SOL')} Solana\n"
-        f"• <code>/ton</code> {coin_emoji('GRAM')} Gram / TON\n"
-        f"• <code>/bnb</code> {coin_emoji('BNB')} BNB\n"
-        f"• <code>/xrp</code> {coin_emoji('XRP')} XRP\n"
-        f"• <code>/ltc</code> {coin_emoji('LTC')} Litecoin\n"
-        f"• <code>/xmr</code> {coin_emoji('XMR')} Monero\n"
-        f"• <code>/trx</code> {coin_emoji('TRX')} Tron\n"
-        f"• <code>/doge</code> {coin_emoji('DOGE')} Dogecoin\n"
-        f"• <code>/shib</code> {coin_emoji('SHIB')} Shiba Inu\n"
-        f"• <code>/pepe</code> {coin_emoji('PEPE')} Pepe\n\n"
-        f"<b>AI Natural Currency Converter:</b>\n"
-        f"• <code>/convert $50 to sol</code>\n"
-        f"• <code>/convert 100 usd btc</code>\n"
-        f"• <code>/convert 0.5 btc in eur</code>\n"
-        f"• <code>/convert 2 eth to usd</code>\n"
-        f"• <code>/convert 1000 doge</code>\n\n"
-        f"<b>All-Time High (ATH):</b>\n"
-        f"• <code>/ath &lt;coin&gt;</code> (e.g. <code>/ath btc</code>, <code>/ath sol</code>)\n\n"
-        f"<b>Any Coin Search:</b>\n"
-        f"• <code>/crypto &lt;coin&gt;</code>"
+        f"🔗 <b>@{bot_username} Commands</b>\n\n"
+        f"📊 <b>Prices & Charts:</b>\n"
+        f"• <code>/top</code> — Top cryptos at a glance\n"
+        f"• <code>/crypto &lt;coin&gt;</code> — Live price card for any coin\n"
+        f"• <code>/btc</code>, <code>/eth</code>, <code>/sol</code>, <code>/bnb</code> — Ticker shortcuts\n"
+        f"• <code>/ath &lt;coin&gt;</code> — All-time high for any coin\n"
+        f"• <code>/convert 0.5 btc</code> — Crypto to USD conversion\n"
+        f"• <code>/convert $50 to sol</code> — USD to crypto conversion\n\n"
+        f"👻 <b>Fun & Meme Commands:</b>\n"
+        f"• <code>/cope &lt;coin&gt;</code> — Could be worse — vs the all-time low\n"
+        f"• <code>/panic &lt;coin&gt;</code> — Emergency panic index & calming checklist\n"
+        f"• <code>/wagmi</code> — Today's top rocket market gainers\n"
+        f"• <code>/satoshi</code> — Random quote from Satoshi Nakamoto\n"
+        f"• <code>/predict &lt;coin&gt;</code> — 100% expert technical price prediction\n"
+        f"• <code>/didyouknow &lt;coin&gt;</code> — Interesting crypto history and trivia\n"
+        f"• <code>/me</code> — Your personal usage intelligence recap\n"
+        f"• <code>/firstseen &lt;coin&gt;</code> — Price change since you first checked\n"
+        f"• <code>/lookup &lt;coin&gt;</code> — Your last check vs the price now\n"
+        f"• <code>/chatvibe</code> — This chat's most-checked coins"
     )
 
-    # Send as ephemeral self-deleting message (auto-deletes in 45s to keep chat pristine)
+    # Send as ephemeral self-deleting message (auto-deletes in 60s to keep chat pristine)
     await send_ephemeral(
         bot=context.bot,
         chat_id=chat.id,
         text=help_text,
-        auto_delete_seconds=45,
+        auto_delete_seconds=60,
         reply_to_message_id=reply_msg_id
     )
 
 async def start_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle callback to return to main menu."""
+    """Handle callback to return to main menu or show help."""
     query = update.callback_query
     await query.answer()
-    if update.effective_chat:
-        await help_command(update, context)
+    user = update.effective_user
+    chat = update.effective_chat
+    if not user or not chat:
+        return
+
+    bot_username = context.bot.username or BOT_USERNAME
+    help_text = (
+        f"🔗 <b>@{bot_username} Commands</b>\n\n"
+        f"📊 <b>Prices & Charts:</b>\n"
+        f"• <code>/top</code> — Top cryptos at a glance\n"
+        f"• <code>/crypto &lt;coin&gt;</code> — Live price card for any coin\n"
+        f"• <code>/btc</code>, <code>/eth</code>, <code>/sol</code>, <code>/bnb</code> — Ticker shortcuts\n"
+        f"• <code>/ath &lt;coin&gt;</code> — All-time high for any coin\n"
+        f"• <code>/convert 0.5 btc</code> — Crypto to USD conversion\n"
+        f"• <code>/convert $50 to sol</code> — USD to crypto conversion\n\n"
+        f"👻 <b>Fun & Meme Commands:</b>\n"
+        f"• <code>/cope &lt;coin&gt;</code> — Could be worse — vs the all-time low\n"
+        f"• <code>/panic &lt;coin&gt;</code> — Emergency panic index & calming checklist\n"
+        f"• <code>/wagmi</code> — Today's top rocket market gainers\n"
+        f"• <code>/satoshi</code> — Random quote from Satoshi Nakamoto\n"
+        f"• <code>/predict &lt;coin&gt;</code> — 100% expert technical price prediction\n"
+        f"• <code>/didyouknow &lt;coin&gt;</code> — Interesting crypto history and trivia\n"
+        f"• <code>/me</code> — Your personal usage intelligence recap\n"
+        f"• <code>/firstseen &lt;coin&gt;</code> — Price change since you first checked\n"
+        f"• <code>/lookup &lt;coin&gt;</code> — Your last check vs the price now\n"
+        f"• <code>/chatvibe</code> — This chat's most-checked coins"
+    )
+
+    back_kb = InlineKeyboardMarkup([
+        [InlineKeyboardButton(text="Add bot to chat ↗", url=f"https://t.me/{bot_username}?startgroup=start")]
+    ])
+    try:
+        await query.message.edit_text(help_text, parse_mode=ParseMode.HTML, reply_markup=back_kb)
+    except Exception:
+        await query.message.reply_text(help_text, parse_mode=ParseMode.HTML, reply_markup=back_kb)
 
 async def check_force_join_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle user clicking '✅ I Have Joined' verification button."""

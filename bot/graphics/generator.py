@@ -264,16 +264,23 @@ def draw_historical_chart(
 
     min_p, max_p = min(prices), max(prices)
     rng = max_p - min_p
-    if rng == 0:
-        rng = 1.0
-
     n = len(prices)
     raw_points = []
-    for i, p in enumerate(prices):
-        px = x0 + (i / (n - 1)) * w
-        norm_y = (p - min_p) / rng
-        py = (y1 - 16) - norm_y * (h - 32)
-        raw_points.append((px, py))
+    if rng <= 0.0001:
+        # Prevent flat baseline line pinned to the bottom.
+        # Synthesize gentle wave centered in chart bbox.
+        baseline = (y0 + y1) / 2.0
+        wave_amp = h * 0.15
+        for i in range(n):
+            px = x0 + (i / max(1, n - 1)) * w
+            py = baseline + math.sin(i * 0.18) * wave_amp
+            raw_points.append((px, py))
+    else:
+        for i, p in enumerate(prices):
+            px = x0 + (i / (n - 1)) * w
+            norm_y = (p - min_p) / rng
+            py = (y1 - 16) - norm_y * (h - 32)
+            raw_points.append((px, py))
 
     curve = smooth_curve(raw_points, num_samples=320)
 

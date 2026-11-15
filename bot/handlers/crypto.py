@@ -55,6 +55,11 @@ async def _send_coin_stats(update: Update, context: ContextTypes.DEFAULT_TYPE, s
         weekly_change = coin_data["change_7d"]
         sparkline_prices = coin_data["sparkline"]
 
+        user = update.effective_user
+        if user:
+            from bot.database import record_coin_lookup
+            await record_coin_lookup(user.id, symbol, price, chat_id=update.effective_chat.id)
+
         # Ultra-fast non-blocking rendering with in-memory caching
         image_buf = await get_cached_or_render(
             render_coin_stats,
