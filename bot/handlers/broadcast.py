@@ -46,7 +46,17 @@ async def broadcast_command(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     """Initiate broadcast wizard (/bd or /broadcast) - Owner only."""
     user = update.effective_user
     if not user or not is_owner(user.id):
-        await update.message.reply_text(f"{E('cross')} Unauthorized. This command is restricted to bot owners.")
+        user_id_str = str(user.id) if user else "Unknown"
+        await update.message.reply_text(
+            f"{E('cross')} <b>Unauthorized.</b> This command is restricted to bot owners.\n\n"
+            f"Your Telegram User ID is: <code>{user_id_str}</code>\n\n"
+            "<b>How to set up in Render:</b>\n"
+            "1. Open your <b>Render Dashboard</b> ➔ Select this bot's service.\n"
+            "2. Go to the <b>Environment</b> tab.\n"
+            f"3. Add <b>Key:</b> <code>OWNER_ID</code>  |  <b>Value:</b> <code>{user_id_str}</code>\n"
+            "4. Click <b>Save Changes</b> (Render will restart with you as owner).",
+            parse_mode=ParseMode.HTML
+        )
         return
 
     user_count = await get_verified_users_count()

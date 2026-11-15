@@ -181,6 +181,28 @@ def _get_next_index(chat_id: int, pool_size: int, history_dict: Dict[int, deque]
     history_dict[chat_id].append(idx)
     return idx
 
+async def _send_fun_card(
+    context: ContextTypes.DEFAULT_TYPE,
+    chat_id: int,
+    image_buf: Any,
+    reply_msg_id: Optional[int] = None,
+    kb: Optional[InlineKeyboardMarkup] = None
+) -> None:
+    """Send image card with active sponsored quotation caption and sponsored button."""
+    sp_caption, sp_markup = await attach_sponsored_content(reply_markup=kb)
+    send_kwargs = {
+        "chat_id": chat_id,
+        "photo": image_buf,
+        "reply_markup": sp_markup,
+    }
+    if reply_msg_id:
+        send_kwargs["reply_to_message_id"] = reply_msg_id
+    if sp_caption:
+        send_kwargs["caption"] = sp_caption
+        send_kwargs["parse_mode"] = ParseMode.HTML
+
+    await context.bot.send_photo(**send_kwargs)
+
 # ─── 1. /satoshi (Expanded & Non-Repeating) ────────────────────────────────────
 async def satoshi_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Generate and send random Satoshi Nakamoto quote card."""
@@ -204,14 +226,7 @@ async def satoshi_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             [custom_btn("Daily Thought", callback_data="fun:daily", icon="currencing"),
              custom_btn("BTC Live", callback_data="stats_BTC", coin="BTC")]
         ])
-        _, sp_markup = await attach_sponsored_content(reply_markup=kb)
-
-        await context.bot.send_photo(
-            chat_id=chat_id,
-            photo=image_buf,
-            reply_to_message_id=reply_msg_id,
-            reply_markup=sp_markup
-        )
+        await _send_fun_card(context, chat_id, image_buf, reply_msg_id, kb)
     except Exception as e:
         logger.error("Error in /satoshi: %s", e)
         await context.bot.send_message(
@@ -243,14 +258,7 @@ async def daily_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             [custom_btn("Fun Meme", callback_data="fun:meme", icon="meme"),
              custom_btn("Top Overview", callback_data="nav_overview", icon="chart")]
         ])
-        _, sp_markup = await attach_sponsored_content(reply_markup=kb)
-
-        await context.bot.send_photo(
-            chat_id=chat_id,
-            photo=image_buf,
-            reply_to_message_id=reply_msg_id,
-            reply_markup=sp_markup
-        )
+        await _send_fun_card(context, chat_id, image_buf, reply_msg_id, kb)
     except Exception as e:
         logger.error("Error in /daily: %s", e)
         await context.bot.send_message(
@@ -282,14 +290,7 @@ async def meme_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             [custom_btn("Daily Thought", callback_data="fun:daily", icon="currencing"),
              custom_btn("Top Rockets", callback_data="fun:wagmi", icon="ath")]
         ])
-        _, sp_markup = await attach_sponsored_content(reply_markup=kb)
-
-        await context.bot.send_photo(
-            chat_id=chat_id,
-            photo=image_buf,
-            reply_to_message_id=reply_msg_id,
-            reply_markup=sp_markup
-        )
+        await _send_fun_card(context, chat_id, image_buf, reply_msg_id, kb)
     except Exception as e:
         logger.error("Error in /meme: %s", e)
         await context.bot.send_message(
@@ -358,14 +359,7 @@ async def cope_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             [custom_btn(f"{symbol} Chart", callback_data=f"stats_{symbol}", coin=symbol),
              custom_btn("Daily Thought", callback_data="fun:daily", icon="currencing")]
         ])
-        _, sp_markup = await attach_sponsored_content(reply_markup=kb)
-
-        await context.bot.send_photo(
-            chat_id=chat_id,
-            photo=image_buf,
-            reply_to_message_id=reply_msg_id,
-            reply_markup=sp_markup
-        )
+        await _send_fun_card(context, chat_id, image_buf, reply_msg_id, kb)
     except Exception as e:
         logger.error("Error in /cope: %s", e)
         await context.bot.send_message(
@@ -416,14 +410,7 @@ async def panic_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             [custom_btn("Cope ATL", callback_data="fun:satoshi", icon="gem"),
              custom_btn(f"{symbol} ATH", callback_data=f"ath_{symbol}", icon="ath")]
         ])
-        _, sp_markup = await attach_sponsored_content(reply_markup=kb)
-
-        await context.bot.send_photo(
-            chat_id=chat_id,
-            photo=image_buf,
-            reply_to_message_id=reply_msg_id,
-            reply_markup=sp_markup
-        )
+        await _send_fun_card(context, chat_id, image_buf, reply_msg_id, kb)
     except Exception as e:
         logger.error("Error in /panic: %s", e)
         await context.bot.send_message(
@@ -450,14 +437,7 @@ async def wagmi_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             [custom_btn("Top Market Overview", callback_data="nav_overview", icon="chart")],
             [custom_btn("Daily Thought", callback_data="fun:daily", icon="currencing")]
         ])
-        _, sp_markup = await attach_sponsored_content(reply_markup=kb)
-
-        await context.bot.send_photo(
-            chat_id=chat_id,
-            photo=image_buf,
-            reply_to_message_id=reply_msg_id,
-            reply_markup=sp_markup
-        )
+        await _send_fun_card(context, chat_id, image_buf, reply_msg_id, kb)
     except Exception as e:
         logger.error("Error in /wagmi: %s", e)
         await context.bot.send_message(
@@ -513,14 +493,7 @@ async def predict_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             [custom_btn(f"{symbol} 7-Day Chart", callback_data=f"stats_{symbol}", coin=symbol)],
             [custom_btn("Daily Thought", callback_data="fun:daily", icon="currencing")]
         ])
-        _, sp_markup = await attach_sponsored_content(reply_markup=kb)
-
-        await context.bot.send_photo(
-            chat_id=chat_id,
-            photo=image_buf,
-            reply_to_message_id=reply_msg_id,
-            reply_markup=sp_markup
-        )
+        await _send_fun_card(context, chat_id, image_buf, reply_msg_id, kb)
     except Exception as e:
         logger.error("Error in /predict: %s", e)
         await context.bot.send_message(
@@ -575,14 +548,7 @@ async def didyouknow_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
             [custom_btn("Another Trivia", callback_data="fun:satoshi", icon="help"),
              custom_btn(f"{symbol} Chart", callback_data=f"stats_{symbol}", coin=symbol)]
         ])
-        _, sp_markup = await attach_sponsored_content(reply_markup=kb)
-
-        await context.bot.send_photo(
-            chat_id=chat_id,
-            photo=image_buf,
-            reply_to_message_id=reply_msg_id,
-            reply_markup=sp_markup
-        )
+        await _send_fun_card(context, chat_id, image_buf, reply_msg_id, kb)
     except Exception as e:
         logger.error("Error in /didyouknow: %s", e)
         await context.bot.send_message(
@@ -616,13 +582,7 @@ async def me_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
             total_lookups=stats["total_lookups"],
             favorite_coin=stats["favorite_coin"]
         )
-        _, sp_markup = await attach_sponsored_content()
-        await context.bot.send_photo(
-            chat_id=chat_id,
-            photo=image_buf,
-            reply_to_message_id=reply_msg_id,
-            reply_markup=sp_markup
-        )
+        await _send_fun_card(context, chat_id, image_buf, reply_msg_id)
     except Exception as e:
         logger.error("Error in /me: %s", e)
         await context.bot.send_message(
@@ -684,14 +644,7 @@ async def firstseen_command(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         kb = InlineKeyboardMarkup([
             [custom_btn(f"{symbol} Chart", callback_data=f"stats_{symbol}", coin=symbol)]
         ])
-        _, sp_markup = await attach_sponsored_content(reply_markup=kb)
-
-        await context.bot.send_photo(
-            chat_id=chat_id,
-            photo=image_buf,
-            reply_to_message_id=reply_msg_id,
-            reply_markup=sp_markup
-        )
+        await _send_fun_card(context, chat_id, image_buf, reply_msg_id, kb)
     except Exception as e:
         logger.error("Error in /firstseen: %s", e)
         await context.bot.send_message(
@@ -753,14 +706,7 @@ async def lookup_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         kb = InlineKeyboardMarkup([
             [custom_btn(f"{symbol} Chart", callback_data=f"stats_{symbol}", coin=symbol)]
         ])
-        _, sp_markup = await attach_sponsored_content(reply_markup=kb)
-
-        await context.bot.send_photo(
-            chat_id=chat_id,
-            photo=image_buf,
-            reply_to_message_id=reply_msg_id,
-            reply_markup=sp_markup
-        )
+        await _send_fun_card(context, chat_id, image_buf, reply_msg_id, kb)
     except Exception as e:
         logger.error("Error in /lookup: %s", e)
         await context.bot.send_message(
@@ -790,14 +736,7 @@ async def chatvibe_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         kb = InlineKeyboardMarkup([
             [custom_btn("Global Overview", callback_data="nav_overview", icon="chart")]
         ])
-        _, sp_markup = await attach_sponsored_content(reply_markup=kb)
-
-        await context.bot.send_photo(
-            chat_id=chat.id,
-            photo=image_buf,
-            reply_to_message_id=reply_msg_id,
-            reply_markup=sp_markup
-        )
+        await _send_fun_card(context, chat.id, image_buf, reply_msg_id, kb)
     except Exception as e:
         logger.error("Error in /chatvibe: %s", e)
         await context.bot.send_message(

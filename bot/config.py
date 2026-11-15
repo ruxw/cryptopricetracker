@@ -33,20 +33,30 @@ def sanitize_bot_username(raw: str) -> str:
 BRAND_NAME = "Currencing"
 
 def parse_owner_ids(raw: str) -> Set[int]:
-    """Parse comma/space separated numeric Telegram owner IDs."""
+    """Parse comma/space/semicolon/quote-separated numeric Telegram owner IDs."""
     if not raw:
         return set()
-    return {int(x) for x in re.split(r"[,\s]+", raw.strip()) if x.isdigit()}
+    cleaned = raw.replace('"', '').replace("'", "")
+    return {int(x) for x in re.split(r"[,;\s]+", cleaned.strip()) if x.isdigit()}
 
-BOT_OWNER_IDS: Set[int] = parse_owner_ids(
-    os.getenv("BOT_OWNER_IDS", os.getenv("OWNER_IDS", os.getenv("OWNER_ID", "")))
-)
+def get_owner_ids() -> Set[int]:
+    """Dynamically get all configured owner IDs from multiple possible env vars."""
+    keys = ["OWNER_ID", "BOT_OWNER_IDS", "OWNER_IDS", "ADMIN_ID", "ADMIN_IDS", "OWNER", "ADMIN"]
+    found: Set[int] = set()
+    for key in keys:
+        val = os.getenv(key, "")
+        if val:
+            found.update(parse_owner_ids(val))
+    return found
+
+BOT_OWNER_IDS: Set[int] = get_owner_ids()
 
 def is_owner(user_id: Optional[int]) -> bool:
     """Check if given user id is authorized as bot owner."""
     if not user_id:
         return False
-    return user_id in BOT_OWNER_IDS
+    # Check dynamically in case env was populated or reloaded
+    return user_id in get_owner_ids()
 
 # Telegram Bot Credentials
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()

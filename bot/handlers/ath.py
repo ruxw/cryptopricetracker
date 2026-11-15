@@ -66,17 +66,22 @@ async def ath_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         )
 
         kb = InlineKeyboardMarkup([
-            [custom_btn(f"{symbol} 7-Day Chart", callback_data=f"stats_{symbol}", coin=symbol)],
-            [custom_btn(f"Subscribe to {symbol}", callback_data=f"sub:{symbol}", icon="bell")]
+            [custom_btn(f"Subscribe to {symbol} Daily Rates", callback_data=f"sub:{symbol}", coin=symbol)]
         ])
-        _, sp_markup = await attach_sponsored_content(reply_markup=kb)
+        sp_caption, sp_markup = await attach_sponsored_content(reply_markup=kb)
 
-        sent_msg = await context.bot.send_photo(
-            chat_id=chat_id,
-            photo=image_buf,
-            reply_to_message_id=reply_msg_id,
-            reply_markup=sp_markup
-        )
+        send_kwargs = {
+            "chat_id": chat_id,
+            "photo": image_buf,
+            "reply_markup": sp_markup,
+        }
+        if reply_msg_id:
+            send_kwargs["reply_to_message_id"] = reply_msg_id
+        if sp_caption:
+            send_kwargs["caption"] = sp_caption
+            send_kwargs["parse_mode"] = ParseMode.HTML
+
+        sent_msg = await context.bot.send_photo(**send_kwargs)
         if sent_msg and sent_msg.photo:
             await save_cached_card_file_id(f"ath_{symbol.lower()}", sent_msg.photo[-1].file_id)
 
@@ -120,16 +125,20 @@ async def ath_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         )
 
         kb = InlineKeyboardMarkup([
-            [custom_btn(f"{symbol} 7-Day Chart", callback_data=f"stats_{symbol}", coin=symbol)],
-            [custom_btn(f"Subscribe to {symbol}", callback_data=f"sub:{symbol}", icon="bell")]
+            [custom_btn(f"Subscribe to {symbol} Daily Rates", callback_data=f"sub:{symbol}", coin=symbol)]
         ])
-        _, sp_markup = await attach_sponsored_content(reply_markup=kb)
+        sp_caption, sp_markup = await attach_sponsored_content(reply_markup=kb)
 
-        sent_msg = await context.bot.send_photo(
-            chat_id=chat_id,
-            photo=image_buf,
-            reply_markup=sp_markup
-        )
+        send_kwargs = {
+            "chat_id": chat_id,
+            "photo": image_buf,
+            "reply_markup": sp_markup,
+        }
+        if sp_caption:
+            send_kwargs["caption"] = sp_caption
+            send_kwargs["parse_mode"] = ParseMode.HTML
+
+        sent_msg = await context.bot.send_photo(**send_kwargs)
         if sent_msg and sent_msg.photo:
             await save_cached_card_file_id(f"ath_{symbol.lower()}", sent_msg.photo[-1].file_id)
 

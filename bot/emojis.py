@@ -74,7 +74,7 @@ UI_EMOJIS: Dict[str, Dict[str, str]] = {
     "wave":       {"custom_id": "5343984088493599366", "fallback": "👋"},
     "time":       {"custom_id": "5451732530048802485", "fallback": "⏳"},
     "currencing": {"custom_id": "5235630047959727475", "fallback": "⚡"},
-    "bell":       {"custom_id": "5451732530048802485", "fallback": "🔔"},
+    "bell":       {"custom_id": "", "fallback": "🔔"},
     "sub":        {"custom_id": "6305073687733215410", "fallback": "✅"},
     "unsub":      {"custom_id": "6303267288913027285", "fallback": "🔕"},
     "quote":      {"custom_id": "5422545753371321761", "fallback": "💬"},

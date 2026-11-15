@@ -43,10 +43,8 @@ _USAGE = (
 
 async def make_crypto_card_keyboard(symbol: str, user_id: Optional[int] = None) -> InlineKeyboardMarkup:
     """
-    Build column-oriented action keyboard below every generated crypto card:
-    Row 1: Subscribe / Unsubscribe for daily rates in DM
-    Row 2: 7-Day Chart
-    Row 3: All-Time High Record
+    Build action keyboard below every generated crypto card:
+    Only daily subscription button (+ sponsored button if enabled).
     """
     sym = symbol.upper()
     subbed = False
@@ -58,17 +56,12 @@ async def make_crypto_card_keyboard(symbol: str, user_id: Optional[int] = None) 
 
     if subbed:
         sub_text = f"Subscribed to {sym} (Tap to Unsub)"
-        sub_icon = "unsub"
+        btn = custom_btn(sub_text, callback_data=f"sub:{sym}", icon="check")
     else:
         sub_text = f"Subscribe to {sym} Daily Rates"
-        sub_icon = "bell"
+        btn = custom_btn(sub_text, callback_data=f"sub:{sym}", coin=sym)
 
-    kb_rows = [
-        [custom_btn(sub_text, callback_data=f"sub:{sym}", icon=sub_icon)],
-        [custom_btn(f"{sym} 7-Day Chart", callback_data=f"stats_{sym}", coin=sym)],
-        [custom_btn(f"{sym} ATH Record", callback_data=f"ath_{sym}", icon="ath")]
-    ]
-    return InlineKeyboardMarkup(kb_rows)
+    return InlineKeyboardMarkup([[btn]])
 
 async def subscribe_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle user clicking the Subscribe/Unsubscribe daily rate button."""
@@ -151,14 +144,20 @@ async def _send_coin_stats(update: Update, context: ContextTypes.DEFAULT_TYPE, s
         )
 
         card_kb = await make_crypto_card_keyboard(symbol, user_id)
-        _, sp_markup = await attach_sponsored_content(reply_markup=card_kb)
+        sp_caption, sp_markup = await attach_sponsored_content(reply_markup=card_kb)
 
-        sent_msg = await context.bot.send_photo(
-            chat_id=chat_id,
-            photo=image_buf,
-            reply_to_message_id=reply_msg_id,
-            reply_markup=sp_markup
-        )
+        send_kwargs = {
+            "chat_id": chat_id,
+            "photo": image_buf,
+            "reply_markup": sp_markup,
+        }
+        if reply_msg_id:
+            send_kwargs["reply_to_message_id"] = reply_msg_id
+        if sp_caption:
+            send_kwargs["caption"] = sp_caption
+            send_kwargs["parse_mode"] = ParseMode.HTML
+
+        sent_msg = await context.bot.send_photo(**send_kwargs)
 
         # Cache Telegram photo file_id for instant visual card in inline queries
         if sent_msg and sent_msg.photo:

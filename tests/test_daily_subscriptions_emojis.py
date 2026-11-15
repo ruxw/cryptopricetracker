@@ -31,8 +31,8 @@ async def test_custom_emojis_two_ways():
     assert btn.callback_data == "stats_BTC"
     assert getattr(btn, "icon_custom_emoji_id", None) == "5969756601567943062"
 
-    btn_bell = custom_btn("Subscribe", callback_data="sub:BTC", icon="bell")
-    assert getattr(btn_bell, "icon_custom_emoji_id", None) == "5451732530048802485"
+    btn_bell = custom_btn("Subscribe", callback_data="sub:BTC", icon="check")
+    assert getattr(btn_bell, "icon_custom_emoji_id", None) == "6305073687733215410"
 
 @pytest.mark.asyncio
 async def test_subscriptions_and_cards():
@@ -54,9 +54,9 @@ async def test_subscriptions_and_cards():
     assert now_sub is False
     assert await is_subscribed(uid, "SOL") is False
 
-    # Keyboard has subscribe column buttons
+    # Keyboard has only daily subscribe button
     kb = await make_crypto_card_keyboard("SOL", uid)
-    assert len(kb.inline_keyboard) == 3
+    assert len(kb.inline_keyboard) == 1
     assert "Subscribe to SOL" in kb.inline_keyboard[0][0].text
 
     # Cache file_id
