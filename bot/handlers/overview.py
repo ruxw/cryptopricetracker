@@ -34,9 +34,9 @@ async def overview_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         image_buf = await get_cached_or_render(render_market_overview, overview_data, ttl=15.0)
 
         kb = InlineKeyboardMarkup([
-            [custom_btn("🔄 Refresh Overview", callback_data="refresh_overview", icon="refresh")],
-            [custom_btn("⚡ Daily Thought", callback_data="fun:daily", icon="currencing"),
-             custom_btn("🐸 Fun Meme", callback_data="fun:meme", icon="meme")]
+            [custom_btn("Refresh Overview", callback_data="refresh_overview", icon="refresh")],
+            [custom_btn("Daily Thought", callback_data="fun:daily", icon="currencing"),
+             custom_btn("Fun Meme", callback_data="fun:meme", icon="meme")]
         ])
         _, sp_markup = await attach_sponsored_content(reply_markup=kb)
 
@@ -80,9 +80,9 @@ async def overview_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         image_buf = await get_cached_or_render(render_market_overview, overview_data, ttl=15.0)
 
         kb = InlineKeyboardMarkup([
-            [custom_btn("🔄 Refresh Overview", callback_data="refresh_overview", icon="refresh")],
-            [custom_btn("⚡ Daily Thought", callback_data="fun:daily", icon="currencing"),
-             custom_btn("🐸 Fun Meme", callback_data="fun:meme", icon="meme")]
+            [custom_btn("Refresh Overview", callback_data="refresh_overview", icon="refresh")],
+            [custom_btn("Daily Thought", callback_data="fun:daily", icon="currencing"),
+             custom_btn("Fun Meme", callback_data="fun:meme", icon="meme")]
         ])
         _, sp_markup = await attach_sponsored_content(reply_markup=kb)
 

@@ -14,8 +14,20 @@ For Telegram inline button labels:
   btn = custom_btn("Subscribe", callback_data="sub:BTC", icon="bell")
 """
 
+import re
 from typing import Dict, Optional, Any
 from telegram import InlineKeyboardButton
+
+# Leading unicode emoji pattern to eliminate doubled emojis on buttons
+_LEADING_EMOJI_RE = re.compile(
+    r"^[\U00010000-\U0010ffff\u2600-\u27bf\u2300-\u23ff\u2b50\u2b55\u200d\ufe0f⚡₿📈🚀🔔🔕🎲😂🐸📊🔄ℹ️✅❌🔒👋⏳🔎👥\s]+",
+    re.UNICODE
+)
+
+def strip_leading_emojis(text: str) -> str:
+    """Remove leading Unicode emojis so only native Telegram custom emoji is displayed on buttons."""
+    cleaned = _LEADING_EMOJI_RE.sub("", text).strip()
+    return cleaned or text
 
 # ─── COIN CUSTOM EMOJIS ───────────────────────────────────────────────────────
 # Map: coin symbol → {"custom_id": "...", "fallback": "..."}
@@ -148,6 +160,9 @@ def custom_btn(
     elif icon:
         emoji_id = btn_icon(icon)
 
+    # When native custom emoji icon is attached, eliminate redundant Unicode emoji from label
+    clean_label = strip_leading_emojis(text) if emoji_id else text
+
     btn_kwargs = dict(kwargs)
     if callback_data is not None:
         btn_kwargs["callback_data"] = callback_data
@@ -159,7 +174,7 @@ def custom_btn(
         btn_kwargs["icon_custom_emoji_id"] = emoji_id
 
     try:
-        return InlineKeyboardButton(text=text, **btn_kwargs)
+        return InlineKeyboardButton(text=clean_label, **btn_kwargs)
     except TypeError:
         # Graceful fallback if telegram library lacks style or icon_custom_emoji_id
         btn_kwargs.pop("icon_custom_emoji_id", None)

@@ -41,7 +41,7 @@ def get_clean_help_text(bot_username: str) -> str:
         f"• /cope &lt;coin&gt; — Could be worse — vs the all-time low\n"
         f"• /panic &lt;coin&gt; — Emergency panic index & calming checklist\n"
         f"• /wagmi — Today's top rocket market gainers\n"
-        f"• /predict &lt;coin&gt; — 100% expert technical price prediction\n"
+        f"• /predict &lt;coin&gt; — Technical price target prediction\n"
         f"• /didyouknow &lt;coin&gt; — Interesting crypto history and trivia\n"
         f"• /me — Your personal usage intelligence recap\n"
         f"• /firstseen &lt;coin&gt; — Price change since you first checked\n"

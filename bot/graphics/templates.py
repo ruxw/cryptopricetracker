@@ -569,7 +569,7 @@ def render_satoshi_quote(quote: str, date_str: str = "Bitcoin Archives · 2009-2
 
     draw = ImageDraw.Draw(img)
     f_badge = get_font(21, weight="bold")
-    draw.text((cx0 + 64, cy0 + 51), "⚡ SATOSHI ARCHIVES", fill=COLORS["navy_text"], font=f_badge)
+    draw.text((cx0 + 64, cy0 + 51), "SATOSHI ARCHIVES", fill=COLORS["navy_text"], font=f_badge)
 
     # Date / Source on right
     f_meta = get_font(15, weight="medium")
@@ -624,7 +624,7 @@ def render_cope_card(symbol: str, price: float, atl_price: float, atl_date: str)
 
     draw = ImageDraw.Draw(img)
     f_title = get_font(28, weight="bold")
-    draw.text((cx0 + 40, cy0 + 36), f"🧘 COPE METER · {symbol.upper()}", fill=(16, 185, 129), font=f_title)
+    draw.text((cx0 + 40, cy0 + 36), f"COPE METER · {symbol.upper()}", fill=(16, 185, 129), font=f_title)
 
     # Subtitle
     f_sub = get_font(16, weight="medium")
@@ -678,7 +678,7 @@ def render_panic_card(symbol: str, price: float, change_24h: float) -> io.BytesI
 
     draw = ImageDraw.Draw(img)
     f_title = get_font(28, weight="bold")
-    draw.text((cx0 + 40, cy0 + 36), f"🚨 EMERGENCY PANIC CONSOLE · {symbol.upper()}", fill=(255, 75, 75), font=f_title)
+    draw.text((cx0 + 40, cy0 + 36), f"EMERGENCY PANIC CONSOLE · {symbol.upper()}", fill=(255, 75, 75), font=f_title)
 
     p_bbox = (cx0 + 40, cy0 + 96, cx1 - 40, cy1 - 40)
     p_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
@@ -723,7 +723,7 @@ def render_wagmi_card(gainers: List[Dict[str, Any]]) -> io.BytesIO:
 
     draw = ImageDraw.Draw(img)
     f_title = get_font(30, weight="extrabold")
-    draw.text((cx0 + 40, cy0 + 36), "🚀 WAGMI LEADERBOARD 🚀", fill=(167, 139, 250), font=f_title)
+    draw.text((cx0 + 40, cy0 + 36), "WAGMI LEADERBOARD", fill=(167, 139, 250), font=f_title)
 
     f_sub = get_font(16, weight="medium")
     draw.text((cx0 + 40, cy0 + 78), "Today's Top Market Rockets · We're All Gonna Make It Anon", fill=COLORS["gray_text"], font=f_sub)
@@ -745,7 +745,7 @@ def render_wagmi_card(gainers: List[Dict[str, Any]]) -> io.BytesIO:
         sym_str = f"{g.get('symbol', 'COIN')} — {g.get('name', 'Crypto')}"
         price_str = f"${format_price(g.get('current_price', 0.0))}"
         chg_val = g.get('change_24h', 0.0)
-        chg_str = f"▲ +{chg_val:.2f}% 🚀" if chg_val >= 0 else f"▼ {chg_val:.2f}%"
+        chg_str = f"+{chg_val:.2f}%" if chg_val >= 0 else f"{chg_val:.2f}%"
 
         draw.text((w_bbox[0] + 30, ry), rank_str, fill=(167, 139, 250), font=f_sym)
         draw.text((w_bbox[0] + 90, ry), sym_str, fill=(255, 255, 255), font=f_sym)
@@ -771,7 +771,7 @@ def render_predict_card(symbol: str, price: float, prediction_target: float, pre
 
     draw = ImageDraw.Draw(img)
     f_title = get_font(28, weight="bold")
-    draw.text((cx0 + 40, cy0 + 36), f"🔮 100% TECHNICAL PREDICTION · {symbol.upper()}", fill=(6, 182, 212), font=f_title)
+    draw.text((cx0 + 40, cy0 + 36), f"PRICE TARGET · {symbol.upper()}", fill=(6, 182, 212), font=f_title)
 
     pr_bbox = (cx0 + 40, cy0 + 96, cx1 - 40, cy1 - 40)
     pr_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
@@ -789,7 +789,7 @@ def render_predict_card(symbol: str, price: float, prediction_target: float, pre
 
     f_item = get_font(18, weight="semibold")
     draw.text((pr_bbox[0] + 40, pr_bbox[1] + 160), f"• Current Price: ${format_price(price)}", fill=(255, 255, 255), font=f_item)
-    draw.text((pr_bbox[0] + 40, pr_bbox[1] + 196), "• Model Confidence: 99.9% 🎯 (Calculated by Lunar Fib Wave Engine)", fill=(240, 240, 240), font=f_item)
+    draw.text((pr_bbox[0] + 40, pr_bbox[1] + 196), "• Model Confidence: 99.9% (Calculated by Lunar Fib Wave Engine)", fill=(240, 240, 240), font=f_item)
     draw.text((pr_bbox[0] + 40, pr_bbox[1] + 232), "• Technical Verdict: GOD CANDLE IMMINENT · BEARS IN SHAMBLES", fill=(0, 230, 118), font=f_item)
     draw.text((pr_bbox[0] + 40, pr_bbox[1] + 268), "• Strategy: Accumulate dips, ignore noise, retire early.", fill=(240, 240, 240), font=f_item)
 
@@ -811,7 +811,7 @@ def render_didyouknow_card(symbol: str, fact_title: str, fact_body: str) -> io.B
 
     draw = ImageDraw.Draw(img)
     f_title = get_font(28, weight="bold")
-    draw.text((cx0 + 40, cy0 + 36), f"💡 DID YOU KNOW? · {symbol.upper()}", fill=(59, 130, 246), font=f_title)
+    draw.text((cx0 + 40, cy0 + 36), f"DID YOU KNOW? · {symbol.upper()}", fill=(59, 130, 246), font=f_title)
 
     dy_bbox = (cx0 + 40, cy0 + 96, cx1 - 40, cy1 - 40)
     dy_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
@@ -862,7 +862,7 @@ def render_me_profile_card(user_id: int, username: Optional[str], first_name: st
 
     draw = ImageDraw.Draw(img)
     f_title = get_font(28, weight="bold")
-    draw.text((cx0 + 40, cy0 + 36), "👤 USER INTELLIGENCE PROFILE", fill=(99, 102, 241), font=f_title)
+    draw.text((cx0 + 40, cy0 + 36), "USER INTELLIGENCE PROFILE", fill=(99, 102, 241), font=f_title)
 
     pr_bbox = (cx0 + 40, cy0 + 96, cx1 - 40, cy1 - 40)
     pr_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
@@ -896,7 +896,7 @@ def render_me_profile_card(user_id: int, username: Optional[str], first_name: st
     draw.text((pr_bbox[0] + 340, pr_bbox[1] + 230), rank_tier, fill=(99, 102, 241), font=f_val)
 
     draw.text((pr_bbox[0] + 620, pr_bbox[1] + 200), "Network Status", fill=COLORS["gray_text"], font=f_lbl)
-    draw.text((pr_bbox[0] + 620, pr_bbox[1] + 230), "Verified ⚡", fill=(0, 230, 118), font=f_val)
+    draw.text((pr_bbox[0] + 620, pr_bbox[1] + 230), "Verified Active", fill=(0, 230, 118), font=f_val)
 
     f_sub = get_font(15, weight="bold")
     draw.text((pr_bbox[0] + 40, pr_bbox[3] - 40), "PRO LEVEL METRICS · REAL-TIME TELEGRAM CRYPTO TRACKER", fill=(99, 102, 241), font=f_sub)
@@ -916,7 +916,7 @@ def render_firstseen_card(symbol: str, first_price: float, current_price: float,
 
     draw = ImageDraw.Draw(img)
     f_title = get_font(28, weight="bold")
-    draw.text((cx0 + 40, cy0 + 36), f"⏳ TIME CAPSULE · {symbol.upper()}", fill=(236, 72, 153), font=f_title)
+    draw.text((cx0 + 40, cy0 + 36), f"TIME CAPSULE · {symbol.upper()}", fill=(236, 72, 153), font=f_title)
 
     fs_bbox = (cx0 + 40, cy0 + 96, cx1 - 40, cy1 - 40)
     fs_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
@@ -965,7 +965,7 @@ def render_lookup_card(symbol: str, last_price: float, current_price: float, las
 
     draw = ImageDraw.Draw(img)
     f_title = get_font(28, weight="bold")
-    draw.text((cx0 + 40, cy0 + 36), f"🔍 PRICE RECAP · {symbol.upper()}", fill=(20, 184, 166), font=f_title)
+    draw.text((cx0 + 40, cy0 + 36), f"PRICE RECAP · {symbol.upper()}", fill=(20, 184, 166), font=f_title)
 
     lk_bbox = (cx0 + 40, cy0 + 96, cx1 - 40, cy1 - 40)
     lk_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
@@ -1014,7 +1014,7 @@ def render_chatvibe_card(chat_title: str, top_coins: List[Dict[str, Any]]) -> io
 
     draw = ImageDraw.Draw(img)
     f_title = get_font(28, weight="bold")
-    draw.text((cx0 + 40, cy0 + 36), "📊 GROUP CHAT VIBE & MARKET PULSE", fill=(245, 158, 11), font=f_title)
+    draw.text((cx0 + 40, cy0 + 36), "GROUP CHAT VIBE & MARKET PULSE", fill=(245, 158, 11), font=f_title)
 
     cv_bbox = (cx0 + 40, cy0 + 96, cx1 - 40, cy1 - 40)
     cv_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
@@ -1070,7 +1070,7 @@ def render_daily_quote(quote: str, author: str, source: str = "Daily Crypto Inte
 
     draw = ImageDraw.Draw(img)
     f_badge = get_font(21, weight="bold")
-    draw.text((cx0 + 64, cy0 + 51), "⚡ DAILY CRYPTO THOUGHT", fill=COLORS["navy_text"], font=f_badge)
+    draw.text((cx0 + 64, cy0 + 51), "DAILY CRYPTO THOUGHT", fill=COLORS["navy_text"], font=f_badge)
 
     # Date / Source on right
     f_meta = get_font(15, weight="medium")
@@ -1125,7 +1125,7 @@ def render_meme_card(title: str, text: str, punchline: str = "") -> io.BytesIO:
 
     # Title Banner
     f_title = get_font(28, weight="bold")
-    draw.text((cx0 + 40, cy0 + 36), "🐸 CRYPTO MEME & DEGEN LORE", fill=(16, 185, 129), font=f_title)
+    draw.text((cx0 + 40, cy0 + 36), "CRYPTO MEME & DEGEN LORE", fill=(16, 185, 129), font=f_title)
 
     f_sub = get_font(16, weight="medium")
     draw.text((cx0 + 40, cy0 + 78), title, fill=(255, 255, 255), font=f_sub)

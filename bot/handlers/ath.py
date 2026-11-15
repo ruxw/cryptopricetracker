@@ -26,14 +26,21 @@ async def ath_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     chat_id = update.effective_chat.id
     reply_msg_id = update.effective_message.message_id if update.effective_message else None
     args = context.args or []
-    raw = args[0] if args else "BTC"
+    if not args:
+        await update.message.reply_text(
+            "<b>Usage:</b>\n/ath &lt;coin name&gt;\n<i>ex /ath btc</i>",
+            parse_mode=ParseMode.HTML,
+            reply_to_message_id=reply_msg_id
+        )
+        return
 
+    raw = args[0]
     symbol = resolve_coin(raw) or raw.upper()
 
     if symbol not in COINS:
-        available_coins = ", ".join(f"{c.lower()}" for c in list(COINS.keys())[:10])
         await update.message.reply_text(
-            f"{E('cross')} Unknown coin <b>{raw}</b>.\nTry: {available_coins}",
+            f"{E('cross')} Unknown coin <b>{raw}</b>.\n\n"
+            "<b>Usage:</b>\n/ath &lt;coin name&gt;\n<i>ex /ath btc</i>",
             parse_mode=ParseMode.HTML,
             reply_to_message_id=reply_msg_id
         )
@@ -59,8 +66,8 @@ async def ath_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         )
 
         kb = InlineKeyboardMarkup([
-            [custom_btn(f"📈 {symbol} 7-Day Chart", callback_data=f"stats_{symbol}", coin=symbol)],
-            [custom_btn(f"🔔 Subscribe to {symbol}", callback_data=f"sub:{symbol}", icon="bell")]
+            [custom_btn(f"{symbol} 7-Day Chart", callback_data=f"stats_{symbol}", coin=symbol)],
+            [custom_btn(f"Subscribe to {symbol}", callback_data=f"sub:{symbol}", icon="bell")]
         ])
         _, sp_markup = await attach_sponsored_content(reply_markup=kb)
 
@@ -113,8 +120,8 @@ async def ath_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         )
 
         kb = InlineKeyboardMarkup([
-            [custom_btn(f"📈 {symbol} 7-Day Chart", callback_data=f"stats_{symbol}", coin=symbol)],
-            [custom_btn(f"🔔 Subscribe to {symbol}", callback_data=f"sub:{symbol}", icon="bell")]
+            [custom_btn(f"{symbol} 7-Day Chart", callback_data=f"stats_{symbol}", coin=symbol)],
+            [custom_btn(f"Subscribe to {symbol}", callback_data=f"sub:{symbol}", icon="bell")]
         ])
         _, sp_markup = await attach_sponsored_content(reply_markup=kb)
 

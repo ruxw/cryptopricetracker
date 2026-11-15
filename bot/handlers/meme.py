@@ -5,16 +5,16 @@ Fun and Meme Command Handlers for Currencing Bot:
 - /meme       — Relatable crypto degen meme & trading truth card
 - /cope       — Calculates your gain vs the All-Time Low (ATL) card
 - /panic      — Emergency panic index meter & calming checklist card
-- /wagmi      — Today's top market gainers with rocket emojis card
-- /predict    — 100% technical price prediction card
+- /wagmi      — Today's top market gainers card
+- /predict    — Technical price target projection card
 - /didyouknow — Interesting crypto history and trivia card
 - /me         — User intelligence profile card
 - /firstseen  — Date/time you first checked that coin and price change since then card
 - /lookup     — Compares price when you last checked vs right now card
 - /chatvibe   — Top checked coins inside this Telegram group card
 
-Note: Fun commands DO NOT send temporary loading messages. They send chat action
-and deliver the visual card directly!
+Note: Incomplete commands teach users via clean Usage: /cmd <coin name> format.
+Buttons only display native custom emojis without redundant doubled Unicode emojis.
 """
 
 import random
@@ -41,6 +41,7 @@ from bot.graphics.templates import (
     render_predict_card, render_didyouknow_card, render_me_profile_card,
     render_firstseen_card, render_lookup_card, render_chatvibe_card
 )
+from bot.graphics.assets import COINS
 from bot.emojis import E, coin_emoji, custom_btn
 
 logger = logging.getLogger(__name__)
@@ -161,7 +162,6 @@ MEME_VAULT = [
 ]
 
 # ─── NON-REPEATING HISTORY TRACKERS ───────────────────────────────────────────
-# Keep track of recent indices per chat so users don't see repeats
 _recent_satoshi: Dict[int, deque] = {}
 _recent_daily: Dict[int, deque] = {}
 _recent_meme: Dict[int, deque] = {}
@@ -198,11 +198,11 @@ async def satoshi_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         quote = SATOSHI_QUOTES[idx]
         image_buf = render_satoshi_quote(quote)
 
-        # Interactive action buttons
+        # Interactive action buttons with single custom emojis
         kb = InlineKeyboardMarkup([
-            [custom_btn("🎲 Another Quote", callback_data="fun:satoshi", icon="dice")],
-            [custom_btn("⚡ Daily Thought", callback_data="fun:daily", icon="currencing"),
-             custom_btn("₿ BTC Live", callback_data="stats_BTC", coin="BTC")]
+            [custom_btn("Another Quote", callback_data="fun:satoshi", icon="dice")],
+            [custom_btn("Daily Thought", callback_data="fun:daily", icon="currencing"),
+             custom_btn("BTC Live", callback_data="stats_BTC", coin="BTC")]
         ])
         _, sp_markup = await attach_sponsored_content(reply_markup=kb)
 
@@ -239,9 +239,9 @@ async def daily_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         image_buf = render_daily_quote(quote, author, source)
 
         kb = InlineKeyboardMarkup([
-            [custom_btn("🎲 Next Thought", callback_data="fun:daily", icon="dice")],
-            [custom_btn("🐸 Fun Meme", callback_data="fun:meme", icon="meme"),
-             custom_btn("📊 Top Overview", callback_data="nav_overview", icon="chart")]
+            [custom_btn("Next Thought", callback_data="fun:daily", icon="dice")],
+            [custom_btn("Fun Meme", callback_data="fun:meme", icon="meme"),
+             custom_btn("Top Overview", callback_data="nav_overview", icon="chart")]
         ])
         _, sp_markup = await attach_sponsored_content(reply_markup=kb)
 
@@ -278,9 +278,9 @@ async def meme_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         image_buf = render_meme_card(title, body, punchline)
 
         kb = InlineKeyboardMarkup([
-            [custom_btn("😂 Another Meme", callback_data="fun:meme", icon="meme")],
-            [custom_btn("⚡ Daily Thought", callback_data="fun:daily", icon="currencing"),
-             custom_btn("🚀 Top Rockets", callback_data="fun:wagmi", icon="ath")]
+            [custom_btn("Another Meme", callback_data="fun:meme", icon="meme")],
+            [custom_btn("Daily Thought", callback_data="fun:daily", icon="currencing"),
+             custom_btn("Top Rockets", callback_data="fun:wagmi", icon="ath")]
         ])
         _, sp_markup = await attach_sponsored_content(reply_markup=kb)
 
@@ -305,7 +305,6 @@ async def fun_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     query = update.callback_query
     await query.answer()
     data = query.data or ""
-    chat_id = update.effective_chat.id
 
     if data == "fun:satoshi":
         await satoshi_command(update, context)
@@ -324,11 +323,28 @@ async def cope_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
     chat_id = update.effective_chat.id
     reply_msg_id = update.effective_message.message_id if update.effective_message else None
-    await context.bot.send_chat_action(chat_id=chat_id, action="upload_photo")
 
     args = context.args or []
-    raw_sym = args[0] if args else "BTC"
-    symbol = resolve_coin(raw_sym) or "BTC"
+    if not args:
+        await update.message.reply_text(
+            "<b>Usage:</b>\n/cope &lt;coin name&gt;\n<i>ex /cope btc</i>",
+            parse_mode=ParseMode.HTML,
+            reply_to_message_id=reply_msg_id
+        )
+        return
+
+    raw_sym = args[0]
+    symbol = resolve_coin(raw_sym) or raw_sym.upper()
+
+    if symbol not in COINS:
+        await update.message.reply_text(
+            f"<b>Unknown coin:</b> {raw_sym}\n\n<b>Usage:</b>\n/cope &lt;coin name&gt;\n<i>ex /cope btc</i>",
+            parse_mode=ParseMode.HTML,
+            reply_to_message_id=reply_msg_id
+        )
+        return
+
+    await context.bot.send_chat_action(chat_id=chat_id, action="upload_photo")
 
     try:
         coin_data = await crypto_service.get_coin_data(symbol)
@@ -339,8 +355,8 @@ async def cope_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
         image_buf = render_cope_card(symbol, price, atl_price, atl_date)
         kb = InlineKeyboardMarkup([
-            [custom_btn(f"📈 {symbol} Chart", callback_data=f"stats_{symbol}", coin=symbol),
-             custom_btn("⚡ Daily Thought", callback_data="fun:daily", icon="currencing")]
+            [custom_btn(f"{symbol} Chart", callback_data=f"stats_{symbol}", coin=symbol),
+             custom_btn("Daily Thought", callback_data="fun:daily", icon="currencing")]
         ])
         _, sp_markup = await attach_sponsored_content(reply_markup=kb)
 
@@ -367,11 +383,28 @@ async def panic_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     chat_id = update.effective_chat.id
     reply_msg_id = update.effective_message.message_id if update.effective_message else None
-    await context.bot.send_chat_action(chat_id=chat_id, action="upload_photo")
 
     args = context.args or []
-    raw_sym = args[0] if args else "BTC"
-    symbol = resolve_coin(raw_sym) or "BTC"
+    if not args:
+        await update.message.reply_text(
+            "<b>Usage:</b>\n/panic &lt;coin name&gt;\n<i>ex /panic btc</i>",
+            parse_mode=ParseMode.HTML,
+            reply_to_message_id=reply_msg_id
+        )
+        return
+
+    raw_sym = args[0]
+    symbol = resolve_coin(raw_sym) or raw_sym.upper()
+
+    if symbol not in COINS:
+        await update.message.reply_text(
+            f"<b>Unknown coin:</b> {raw_sym}\n\n<b>Usage:</b>\n/panic &lt;coin name&gt;\n<i>ex /panic btc</i>",
+            parse_mode=ParseMode.HTML,
+            reply_to_message_id=reply_msg_id
+        )
+        return
+
+    await context.bot.send_chat_action(chat_id=chat_id, action="upload_photo")
 
     try:
         coin_data = await crypto_service.get_coin_data(symbol)
@@ -380,8 +413,8 @@ async def panic_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
         image_buf = render_panic_card(symbol, price, change_24h)
         kb = InlineKeyboardMarkup([
-            [custom_btn("🧘 Cope ATL", callback_data="fun:satoshi", icon="gem"),
-             custom_btn(f"🚀 {symbol} ATH", callback_data=f"ath_{symbol}", icon="ath")]
+            [custom_btn("Cope ATL", callback_data="fun:satoshi", icon="gem"),
+             custom_btn(f"{symbol} ATH", callback_data=f"ath_{symbol}", icon="ath")]
         ])
         _, sp_markup = await attach_sponsored_content(reply_markup=kb)
 
@@ -414,8 +447,8 @@ async def wagmi_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         gainers = await crypto_service.get_top_gainers(limit=5)
         image_buf = render_wagmi_card(gainers)
         kb = InlineKeyboardMarkup([
-            [custom_btn("📊 Full Market Overview", callback_data="nav_overview", icon="chart")],
-            [custom_btn("⚡ Daily Thought", callback_data="fun:daily", icon="currencing")]
+            [custom_btn("Top Market Overview", callback_data="nav_overview", icon="chart")],
+            [custom_btn("Daily Thought", callback_data="fun:daily", icon="currencing")]
         ])
         _, sp_markup = await attach_sponsored_content(reply_markup=kb)
 
@@ -436,17 +469,34 @@ async def wagmi_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 # ─── 7. /predict <coin> ───────────────────────────────────────────────────────
 async def predict_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Generate and send 100% technical price prediction card."""
+    """Generate and send technical price target projection card."""
     if not await check_user_authorization(update, context):
         return
 
     chat_id = update.effective_chat.id
     reply_msg_id = update.effective_message.message_id if update.effective_message else None
-    await context.bot.send_chat_action(chat_id=chat_id, action="upload_photo")
 
     args = context.args or []
-    raw_sym = args[0] if args else "BTC"
-    symbol = resolve_coin(raw_sym) or "BTC"
+    if not args:
+        await update.message.reply_text(
+            "<b>Usage:</b>\n/predict &lt;coin name&gt;\n<i>ex /predict btc</i>",
+            parse_mode=ParseMode.HTML,
+            reply_to_message_id=reply_msg_id
+        )
+        return
+
+    raw_sym = args[0]
+    symbol = resolve_coin(raw_sym) or raw_sym.upper()
+
+    if symbol not in COINS:
+        await update.message.reply_text(
+            f"<b>Unknown coin:</b> {raw_sym}\n\n<b>Usage:</b>\n/predict &lt;coin name&gt;\n<i>ex /predict btc</i>",
+            parse_mode=ParseMode.HTML,
+            reply_to_message_id=reply_msg_id
+        )
+        return
+
+    await context.bot.send_chat_action(chat_id=chat_id, action="upload_photo")
 
     try:
         coin_data = await crypto_service.get_coin_data(symbol)
@@ -460,8 +510,8 @@ async def predict_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         image_buf = render_predict_card(symbol, price, prediction_target, predicted_gain)
         kb = InlineKeyboardMarkup([
-            [custom_btn(f"📈 {symbol} 7-Day Chart", callback_data=f"stats_{symbol}", coin=symbol)],
-            [custom_btn("⚡ Daily Thought", callback_data="fun:daily", icon="currencing")]
+            [custom_btn(f"{symbol} 7-Day Chart", callback_data=f"stats_{symbol}", coin=symbol)],
+            [custom_btn("Daily Thought", callback_data="fun:daily", icon="currencing")]
         ])
         _, sp_markup = await attach_sponsored_content(reply_markup=kb)
 
@@ -501,20 +551,29 @@ async def didyouknow_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     chat_id = update.effective_chat.id
     reply_msg_id = update.effective_message.message_id if update.effective_message else None
-    await context.bot.send_chat_action(chat_id=chat_id, action="upload_photo")
 
     args = context.args or []
-    raw_sym = args[0] if args else random.choice(list(DID_YOU_KNOW_FACTS.keys()))
-    symbol = resolve_coin(raw_sym) or "BTC"
+    if not args:
+        await update.message.reply_text(
+            "<b>Usage:</b>\n/didyouknow &lt;coin name&gt;\n<i>ex /didyouknow btc</i>",
+            parse_mode=ParseMode.HTML,
+            reply_to_message_id=reply_msg_id
+        )
+        return
+
+    raw_sym = args[0]
+    symbol = resolve_coin(raw_sym) or raw_sym.upper()
 
     fact = DID_YOU_KNOW_FACTS.get(symbol.upper(), DID_YOU_KNOW_FACTS["BTC"])
     title, body = fact
 
+    await context.bot.send_chat_action(chat_id=chat_id, action="upload_photo")
+
     try:
         image_buf = render_didyouknow_card(symbol, title, body)
         kb = InlineKeyboardMarkup([
-            [custom_btn("🎲 Another Trivia", callback_data="fun:satoshi", icon="help"),
-             custom_btn(f"📈 {symbol} Chart", callback_data=f"stats_{symbol}", coin=symbol)]
+            [custom_btn("Another Trivia", callback_data="fun:satoshi", icon="help"),
+             custom_btn(f"{symbol} Chart", callback_data=f"stats_{symbol}", coin=symbol)]
         ])
         _, sp_markup = await attach_sponsored_content(reply_markup=kb)
 
@@ -581,15 +640,32 @@ async def firstseen_command(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
     chat_id = update.effective_chat.id
     reply_msg_id = update.effective_message.message_id if update.effective_message else None
-    await context.bot.send_chat_action(chat_id=chat_id, action="upload_photo")
+
+    args = context.args or []
+    if not args:
+        await update.message.reply_text(
+            "<b>Usage:</b>\n/firstseen &lt;coin name&gt;\n<i>ex /firstseen btc</i>",
+            parse_mode=ParseMode.HTML,
+            reply_to_message_id=reply_msg_id
+        )
+        return
+
+    raw_sym = args[0]
+    symbol = resolve_coin(raw_sym) or raw_sym.upper()
+
+    if symbol not in COINS:
+        await update.message.reply_text(
+            f"<b>Unknown coin:</b> {raw_sym}\n\n<b>Usage:</b>\n/firstseen &lt;coin name&gt;\n<i>ex /firstseen btc</i>",
+            parse_mode=ParseMode.HTML,
+            reply_to_message_id=reply_msg_id
+        )
+        return
 
     user = update.effective_user
     if not user:
         return
 
-    args = context.args or []
-    raw_sym = args[0] if args else "BTC"
-    symbol = resolve_coin(raw_sym) or "BTC"
+    await context.bot.send_chat_action(chat_id=chat_id, action="upload_photo")
 
     try:
         fs = await get_user_first_seen(user.id, symbol)
@@ -606,7 +682,7 @@ async def firstseen_command(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
         image_buf = render_firstseen_card(symbol, first_price, curr_price, str(first_time)[:16])
         kb = InlineKeyboardMarkup([
-            [custom_btn(f"📈 {symbol} Chart", callback_data=f"stats_{symbol}", coin=symbol)]
+            [custom_btn(f"{symbol} Chart", callback_data=f"stats_{symbol}", coin=symbol)]
         ])
         _, sp_markup = await attach_sponsored_content(reply_markup=kb)
 
@@ -633,15 +709,32 @@ async def lookup_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     chat_id = update.effective_chat.id
     reply_msg_id = update.effective_message.message_id if update.effective_message else None
-    await context.bot.send_chat_action(chat_id=chat_id, action="upload_photo")
+
+    args = context.args or []
+    if not args:
+        await update.message.reply_text(
+            "<b>Usage:</b>\n/lookup &lt;coin name&gt;\n<i>ex /lookup btc</i>",
+            parse_mode=ParseMode.HTML,
+            reply_to_message_id=reply_msg_id
+        )
+        return
+
+    raw_sym = args[0]
+    symbol = resolve_coin(raw_sym) or raw_sym.upper()
+
+    if symbol not in COINS:
+        await update.message.reply_text(
+            f"<b>Unknown coin:</b> {raw_sym}\n\n<b>Usage:</b>\n/lookup &lt;coin name&gt;\n<i>ex /lookup btc</i>",
+            parse_mode=ParseMode.HTML,
+            reply_to_message_id=reply_msg_id
+        )
+        return
 
     user = update.effective_user
     if not user:
         return
 
-    args = context.args or []
-    raw_sym = args[0] if args else "BTC"
-    symbol = resolve_coin(raw_sym) or "BTC"
+    await context.bot.send_chat_action(chat_id=chat_id, action="upload_photo")
 
     try:
         last_rec = await get_user_last_lookup(user.id, symbol)
@@ -658,7 +751,7 @@ async def lookup_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
         image_buf = render_lookup_card(symbol, last_price, curr_price, last_time)
         kb = InlineKeyboardMarkup([
-            [custom_btn(f"📈 {symbol} Chart", callback_data=f"stats_{symbol}", coin=symbol)]
+            [custom_btn(f"{symbol} Chart", callback_data=f"stats_{symbol}", coin=symbol)]
         ])
         _, sp_markup = await attach_sponsored_content(reply_markup=kb)
 
@@ -695,7 +788,7 @@ async def chatvibe_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         top_coins = await get_chat_top_coins(chat.id, limit=5)
         image_buf = render_chatvibe_card(title, top_coins)
         kb = InlineKeyboardMarkup([
-            [custom_btn("📊 Global Overview", callback_data="nav_overview", icon="chart")]
+            [custom_btn("Global Overview", callback_data="nav_overview", icon="chart")]
         ])
         _, sp_markup = await attach_sponsored_content(reply_markup=kb)
 

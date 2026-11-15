@@ -25,14 +25,21 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     chat_id = update.effective_chat.id
     reply_msg_id = update.effective_message.message_id if update.effective_message else None
     args = context.args or []
-    raw = args[0] if args else "BTC"
+    if not args:
+        await update.message.reply_text(
+            "<b>Usage:</b>\n/stats &lt;coin name&gt;\n<i>ex /stats btc</i>",
+            parse_mode=ParseMode.HTML,
+            reply_to_message_id=reply_msg_id
+        )
+        return
 
+    raw = args[0]
     symbol = resolve_coin(raw) or raw.upper()
 
     if symbol not in COINS:
-        available_coins = ", ".join(f"{c.lower()}" for c in list(COINS.keys())[:10])
         await update.message.reply_text(
-            f"{E('cross')} Unknown coin <b>{raw}</b>.\nTry: {available_coins}",
+            f"{E('cross')} Unknown coin <b>{raw}</b>.\n\n"
+            "<b>Usage:</b>\n/stats &lt;coin name&gt;\n<i>ex /stats btc</i>",
             parse_mode=ParseMode.HTML,
             reply_to_message_id=reply_msg_id
         )
@@ -57,8 +64,8 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         )
 
         kb = InlineKeyboardMarkup([
-            [custom_btn(f"🔔 Subscribe to {symbol}", callback_data=f"sub:{symbol}", icon="bell")],
-            [custom_btn(f"🚀 {symbol} ATH Record", callback_data=f"ath_{symbol}", icon="ath")]
+            [custom_btn(f"Subscribe to {symbol}", callback_data=f"sub:{symbol}", icon="bell")],
+            [custom_btn(f"{symbol} ATH Record", callback_data=f"ath_{symbol}", icon="ath")]
         ])
         _, sp_markup = await attach_sponsored_content(reply_markup=kb)
 
@@ -110,8 +117,8 @@ async def stats_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         )
 
         kb = InlineKeyboardMarkup([
-            [custom_btn(f"🔔 Subscribe to {symbol}", callback_data=f"sub:{symbol}", icon="bell")],
-            [custom_btn(f"🚀 {symbol} ATH Record", callback_data=f"ath_{symbol}", icon="ath")]
+            [custom_btn(f"Subscribe to {symbol}", callback_data=f"sub:{symbol}", icon="bell")],
+            [custom_btn(f"{symbol} ATH Record", callback_data=f"ath_{symbol}", icon="ath")]
         ])
         _, sp_markup = await attach_sponsored_content(reply_markup=kb)
 

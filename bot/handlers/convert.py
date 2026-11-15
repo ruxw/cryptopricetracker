@@ -16,14 +16,13 @@ logger = logging.getLogger(__name__)
 LOADING_TEXT = "Checking latest rates..."
 
 _HELP_TEXT = (
-    f"{E('convert')} <b>Currencing AI Converter</b>\n\n"
-    "Super fast & easy natural language conversions powered by AI:\n\n"
+    "<b>Usage:</b>\n"
+    "/convert &lt;amount&gt; &lt;coin name&gt; to &lt;currency&gt;\n"
+    "<i>ex /convert 0.5 btc to usd</i>\n\n"
+    "<b>Examples:</b>\n"
     "• <code>/convert $50 to sol</code>\n"
     "• <code>/convert 0.5 btc in eur</code>\n"
-    "• <code>/convert 100 usd btc</code>\n"
-    "• <code>/convert 2 eth to usd</code>\n"
-    "• <code>/convert 1000 doge</code>\n"
-    "• <code>/convert 50 bucks in ton</code>"
+    "• <code>/convert 100 usd btc</code>"
 )
 
 async def convert_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -95,7 +94,12 @@ async def convert_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         logger.error("Error in AI conversion: %s", e)
         await context.bot.send_message(
             chat_id=chat_id,
-            text=f"{E('cross')} Conversion failed for <code>{raw_query}</code>. Example: <code>/convert 100 usd btc</code>",
+            text=(
+                f"{E('cross')} Conversion failed for <code>{raw_query}</code>.\n\n"
+                "<b>Usage:</b>\n"
+                "/convert &lt;amount&gt; &lt;coin name&gt; to &lt;currency&gt;\n"
+                "<i>ex /convert 0.5 btc to usd</i>"
+            ),
             parse_mode=ParseMode.HTML,
             reply_to_message_id=reply_msg_id
         )

@@ -36,11 +36,9 @@ logger = logging.getLogger(__name__)
 LOADING_TEXT = "Checking latest rates..."
 
 _USAGE = (
-    f"{E('currencing')} <b>Usage:</b> /crypto &lt;coin&gt;\n\n"
-    "<b>Supported Cryptocurrencies:</b>\n"
-    "• Top: btc, eth, sol, bnb, xrp, doge, ada, avax, ton, trx, ltc, xmr\n"
-    "• Memes: doge, shib, pepe\n\n"
-    "<b>Shortcuts:</b> /btc, /eth, /sol, /top"
+    "<b>Usage:</b>\n"
+    "/crypto &lt;coin name&gt;\n"
+    "<i>ex /crypto btc</i>"
 )
 
 async def make_crypto_card_keyboard(symbol: str, user_id: Optional[int] = None) -> InlineKeyboardMarkup:
@@ -59,16 +57,16 @@ async def make_crypto_card_keyboard(symbol: str, user_id: Optional[int] = None) 
             subbed = False
 
     if subbed:
-        sub_text = f"🔕 Subscribed to {sym} (Tap to Unsub)"
+        sub_text = f"Subscribed to {sym} (Tap to Unsub)"
         sub_icon = "unsub"
     else:
-        sub_text = f"🔔 Subscribe to {sym} Daily Rates"
+        sub_text = f"Subscribe to {sym} Daily Rates"
         sub_icon = "bell"
 
     kb_rows = [
         [custom_btn(sub_text, callback_data=f"sub:{sym}", icon=sub_icon)],
-        [custom_btn(f"📈 {sym} 7-Day Chart", callback_data=f"stats_{sym}", coin=sym)],
-        [custom_btn(f"🚀 {sym} ATH Record", callback_data=f"ath_{sym}", icon="ath")]
+        [custom_btn(f"{sym} 7-Day Chart", callback_data=f"stats_{sym}", coin=sym)],
+        [custom_btn(f"{sym} ATH Record", callback_data=f"ath_{sym}", icon="ath")]
     ]
     return InlineKeyboardMarkup(kb_rows)
 

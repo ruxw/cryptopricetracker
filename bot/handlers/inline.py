@@ -51,8 +51,8 @@ async def build_coin_inline_card(
 
     kb = InlineKeyboardMarkup([
         [
-            custom_btn(f"📈 {sym} 7-Day Chart", url=f"https://t.me/{bot_username}?start=stats_{sym}", coin=sym),
-            custom_btn(f"🚀 {sym} ATH Record", url=f"https://t.me/{bot_username}?start=ath_{sym}", icon="ath")
+            custom_btn(f"{sym} 7-Day Chart", url=f"https://t.me/{bot_username}?start=stats_{sym}", coin=sym),
+            custom_btn(f"{sym} ATH Record", url=f"https://t.me/{bot_username}?start=ath_{sym}", icon="ath")
         ]
     ])
 
@@ -120,7 +120,7 @@ async def inline_query_handler(update: Update, context: ContextTypes.DEFAULT_TYP
                 parse_mode=ParseMode.MARKDOWN
             ),
             reply_markup=InlineKeyboardMarkup([
-                [custom_btn("🚀 Start in Private (Unlock Features)", url=deep_link, icon="gem")]
+                [custom_btn("Start in Private (Unlock Features)", url=deep_link, icon="gem")]
             ])
         )
         await inline_query.answer([unverified_article], button=button, cache_time=5, is_personal=True)
@@ -144,7 +144,7 @@ async def inline_query_handler(update: Update, context: ContextTypes.DEFAULT_TYP
                 parse_mode=ParseMode.MARKDOWN
             ),
             reply_markup=InlineKeyboardMarkup([
-                [custom_btn("📢 Join Channels in Private", url=get_start_deep_link(bot_username), icon="group")]
+                [custom_btn("Join Channels in Private", url=get_start_deep_link(bot_username), icon="group")]
             ])
         )
         await inline_query.answer([join_article], button=button, cache_time=5, is_personal=True)
@@ -175,8 +175,8 @@ async def inline_query_handler(update: Update, context: ContextTypes.DEFAULT_TYP
                     f"{E('currencing')} <i>Powered by Currencing Market Intelligence</i>"
                 )
                 kb = InlineKeyboardMarkup([
-                    [custom_btn(f"📈 {crypto_sym} Stats", url=f"https://t.me/{bot_username}?start=stats_{crypto_sym}", coin=crypto_sym)],
-                    [custom_btn("📊 Full Market Overview", url=f"https://t.me/{bot_username}?start=overview", icon="chart")]
+                    [custom_btn(f"{crypto_sym} Stats", url=f"https://t.me/{bot_username}?start=stats_{crypto_sym}", coin=crypto_sym)],
+                    [custom_btn("Full Market Overview", url=f"https://t.me/{bot_username}?start=overview", icon="chart")]
                 ])
 
                 results.append(InlineQueryResultArticle(
@@ -207,7 +207,7 @@ async def inline_query_handler(update: Update, context: ContextTypes.DEFAULT_TYP
                 f"{E('currencing')} <i>Official record tracked by Currencing</i>"
             )
             kb = InlineKeyboardMarkup([
-                [custom_btn(f"📈 View {sym} 7-Day Chart", url=f"https://t.me/{bot_username}?start=stats_{sym}", coin=sym)]
+                [custom_btn(f"View {sym} 7-Day Chart", url=f"https://t.me/{bot_username}?start=stats_{sym}", coin=sym)]
             ])
 
             cached_ath = await get_cached_card_file_id(f"ath_{sym.lower()}")
@@ -250,7 +250,7 @@ async def inline_query_handler(update: Update, context: ContextTypes.DEFAULT_TYP
             f"\n\n{E('currencing')} <i>Powered by Currencing Crypto Intelligence</i>"
         )
         kb_overview = InlineKeyboardMarkup([
-            [custom_btn("📊 View Full 3×3 Grid Card", url=f"https://t.me/{bot_username}?start=overview", icon="chart")]
+            [custom_btn("View Full 3×3 Grid Card", url=f"https://t.me/{bot_username}?start=overview", icon="chart")]
         ])
 
         if cached_ov:
