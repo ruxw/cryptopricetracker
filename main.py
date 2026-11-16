@@ -139,7 +139,7 @@ def setup_application(token: str):
     app.add_handler(CommandHandler("panic", panic_command))
     app.add_handler(CommandHandler("wagmi", wagmi_command))
     app.add_handler(CommandHandler("predict", predict_command))
-    app.add_handler(CommandHandler("didyouknow", didyouknow_command))
+    app.add_handler(CommandHandler(["didyouknow", "dyk"], didyouknow_command))
     app.add_handler(CommandHandler("me", me_command))
     app.add_handler(CommandHandler("firstseen", firstseen_command))
     app.add_handler(CommandHandler("lookup", lookup_command))
@@ -230,7 +230,8 @@ async def main():
         BotCommand("panic",      "Emergency panic index & checklist"),
         BotCommand("wagmi",      "Today's top rocket gainers"),
         BotCommand("predict",    "100% technical price prediction"),
-        BotCommand("didyouknow", "Crypto history & trivia"),
+        BotCommand("didyouknow", "Crypto history & trivia (/dyk)"),
+        BotCommand("dyk",        "Crypto history & trivia shortcut"),
         BotCommand("me",         "Your usage intelligence recap"),
         BotCommand("firstseen",  "Price change since first check"),
         BotCommand("lookup",     "Compare last check vs now"),

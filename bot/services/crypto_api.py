@@ -456,6 +456,22 @@ class CryptoApiService:
                 })
         return result
 
+    async def get_top_gainers(self, limit: int = 5) -> List[Dict[str, Any]]:
+        """Return top market gainers sorted by 24h change descending."""
+        await self.refresh_market_data()
+        coins = []
+        for sym in COINS.keys():
+            coin = self._cache.get(sym, INITIAL_FALLBACK.get(sym))
+            if coin:
+                coins.append({
+                    "symbol": sym,
+                    "name": coin.get("name", sym),
+                    "current_price": coin.get("current_price", 0.0),
+                    "change_24h": coin.get("change_24h", 0.0),
+                })
+        coins.sort(key=lambda x: x["change_24h"], reverse=True)
+        return coins[:limit]
+
     def get_fiat_rate(self, fiat_symbol: str) -> float:
         """Get exchange rate multiplier for a fiat currency against USD."""
         return self._fiat_rates.get(fiat_symbol.upper(), 1.0)

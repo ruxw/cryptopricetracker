@@ -250,11 +250,7 @@ async def inline_query_handler(update: Update, context: ContextTypes.DEFAULT_TYP
             "\n".join(overview_lines) +
             f"\n\n{E('currencing')} <i>Powered by Currencing Crypto Intelligence</i>"
         )
-        kb_overview = InlineKeyboardMarkup([
-            [custom_btn("View Full 3×3 Grid Card", url=f"https://t.me/{bot_username}?start=overview", icon="chart")]
-        ])
-
-        sp_cap_ov, sp_kb_ov = await attach_sponsored_content(reply_markup=kb_overview)
+        sp_cap_ov, sp_kb_ov = await attach_sponsored_content(reply_markup=None)
         if cached_ov:
             results.append(InlineQueryResultCachedPhoto(
                 id=f"overview_{uuid.uuid4().hex[:6]}",

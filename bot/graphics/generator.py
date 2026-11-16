@@ -7,7 +7,7 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 from bot.config import BOT_USERNAME
 from bot.graphics.assets import (
-    ASSETS_DIR, COLORS, get_font, hex_to_rgb
+    ASSETS_DIR, COLORS, get_font, hex_to_rgb, COINS
 )
 
 BG_TEMPLATE_PATH = os.path.join(ASSETS_DIR, "background.png")
@@ -15,6 +15,7 @@ FOOTER_PATH = os.path.join(ASSETS_DIR, "currencing_footer.png")
 CURRENCING_LOGO_PATH = os.path.join(ASSETS_DIR, "currencing_logo.png")
 
 _icon_cache: dict[int, Image.Image] = {}
+_themed_bg_cache: dict[tuple, Image.Image] = {}
 
 def get_currencing_icon(size: int = 24) -> Optional[Image.Image]:
     """Load and cache the Currencing logo icon for bottom pills."""
@@ -37,6 +38,10 @@ def get_themed_background(
     icon_path: Optional[str] = None
 ) -> Image.Image:
     """Generate radiant ambient gradient background with repeating watermark pattern."""
+    cache_key = (width, height, accent_hex, icon_path)
+    if cache_key in _themed_bg_cache:
+        return _themed_bg_cache[cache_key].copy()
+
     acc_rgb = hex_to_rgb(accent_hex)
     
     # Generate rich harmonic gradient
@@ -73,7 +78,73 @@ def get_themed_background(
         except Exception:
             pass
 
-    return base
+    _themed_bg_cache[cache_key] = base
+    return base.copy()
+
+def draw_card_frame(
+    img: Image.Image,
+    card_bbox: Tuple[int, int, int, int] = (56, 68, 968, 580),
+    card_rad: int = 28,
+    coin_symbol: Optional[str] = None
+) -> Tuple[Image.Image, Tuple[int, int, int, int]]:
+    """
+    Draw sleek floating obsidian card matching exact reference images.
+    Returns (img, card_bbox).
+    """
+    cx0, cy0, cx1, cy1 = card_bbox
+    width, height = img.size
+
+    # Fast drop shadow (under 1ms)
+    shadow = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    s_draw = ImageDraw.Draw(shadow)
+    s_draw.rounded_rectangle((cx0, cy0 + 6, cx1, cy1 + 6), radius=card_rad, fill=(0, 0, 0, 100))
+    shadow = shadow.filter(ImageFilter.BoxBlur(4))
+    img.alpha_composite(shadow)
+
+    # Solid obsidian card
+    card_layer = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    c_draw = ImageDraw.Draw(card_layer)
+    c_draw.rounded_rectangle(card_bbox, radius=card_rad, fill=(12, 13, 17, 255), outline=(255, 255, 255, 22), width=1)
+    img.alpha_composite(card_layer)
+
+    # Top-right pill if coin_symbol specified
+    if coin_symbol:
+        sym = coin_symbol.upper()
+        meta = COINS.get(sym, {"name": sym, "icon": None})
+        coin_name = meta.get("name", sym)
+        font_pill = get_font(24, weight="bold")
+        nb = font_pill.getbbox(coin_name)
+        nw = nb[2] - nb[0]
+
+        icon_path = meta.get("icon")
+        has_icon = bool(icon_path and os.path.exists(icon_path))
+        icon_size = 32
+
+        pill_w = max(190, (icon_size + 14 + nw + 36) if has_icon else (nw + 40))
+        pill_h = 56
+        px1 = cx1 - 42
+        px0 = px1 - pill_w
+        py0 = cy0 + 44
+        py1 = py0 + pill_h
+
+        pill_layer = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+        p_draw = ImageDraw.Draw(pill_layer)
+        p_draw.rounded_rectangle((px0, py0, px1, py1), radius=pill_h // 2, fill=(246, 244, 240, 255), outline=(255, 255, 255, 200), width=1)
+        img.alpha_composite(pill_layer)
+
+        if has_icon:
+            try:
+                c_icon = Image.open(icon_path).convert("RGBA").resize((icon_size, icon_size), Image.Resampling.LANCZOS)
+                img.alpha_composite(c_icon, (px0 + 16, py0 + (pill_h - icon_size) // 2))
+            except Exception:
+                has_icon = False
+
+        draw = ImageDraw.Draw(img)
+        text_x = px0 + 16 + icon_size + 10 if has_icon else px0 + (pill_w - nw) // 2
+        text_y = py0 + (pill_h - (nb[3] - nb[1])) // 2 - nb[1]
+        draw.text((text_x, text_y), coin_name, fill=COLORS["navy_text"], font=font_pill)
+
+    return img, card_bbox
 
 def get_base_background(width: int = 1024, height: int = 640) -> Image.Image:
     """Return background (uses themed background or default template)."""

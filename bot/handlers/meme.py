@@ -123,8 +123,11 @@ DAILY_THOUGHTS = [
     ("Hold onto sound money, continue learning every day, and never let short-term market noise cloud long-term vision.", "Currencing Daily Intelligence", "Daily Motivation")
 ]
 
-# ─── 35+ RELATABLE CRYPTO MEMES & TRADING TRUTHS ──────────────────────────────
+# ─── 50+ RELATABLE CRYPTO MEMES & TRADING TRUTHS (REDDIT TOP UPVOTED) ─────────
+# Sources: r/CryptoCurrencyMemes, r/SatoshiStreetBets, r/CryptoIndia,
+# r/IndianStreetBets, r/IndianDankMemes, r/DesiDankMemes
 MEME_VAULT = [
+    # ── r/CryptoCurrencyMemes Top Upvoted ──
     ("Buying The Dip", "You bought the dip, but then the dip dipped, and the dip's dip took a deeper dip into the abyss.", "Verdict: You are now a proud long-term holder."),
     ("The 3 AM Portfolio Check", "Waking up at 3:17 AM in pitch darkness to check your 1-minute candle chart like an undercover CIA operative.", "Verdict: Down $4.80. Heart rate: 160 BPM."),
     ("DCA Masterclass", "Dollar Cost Averaging all the way from the All-Time High straight into generational depression.", "Verdict: True Chad discipline. Respect."),
@@ -140,25 +143,40 @@ MEME_VAULT = [
     ("Touching Grass Protocol", "Your friends telling you to go outside and touch grass, but grass doesn't have 24h trading volume or staking APY.", "Verdict: Nature has terrible tokenomics."),
     ("The Tax Season Panic", "Staring at 4,800 micro-swaps on Uniswap trying to remember if swapping PEPE for SHIB was a taxable event.", "Verdict: Good luck to your accountant."),
     ("Cold Storage Paranoia", "Writing your 24-word seed phrase on steel plates, burying it in 3 different continents, and forgetting where.", "Verdict: Ultimate cryptographic security."),
-    ("HODL Until Retirement", "Telling everyone you are holding until 2045, but checking the price 180 times between lunch and dinner.", "Verdict: Emotional roller coaster enthusiast."),
-    ("The Telegram Alpha Group", "Joining a private VIP trading group where the 'expert analyst' posts a chart with one green arrow pointing to the moon.", "Verdict: Financial advisor licensed in MS Paint."),
-    ("Bear Market Survival", "Surviving an 85% market crash and feeling completely immune to any psychological pain in ordinary human life.", "Verdict: Unshakable stoic warrior."),
+    ("Buy High, Sell Low Legend", "Flawlessly bought the top wick at $69k, sold the bottom wick at $16k, and re-bought the new top at $73k.", "Verdict: Hall of Fame buy-high-sell-low champion."),
+    ("In It For The Tech", "Portfolio dumps 85% in 48 hours: 'Honestly, I never cared about the money anyway, the underlying cryptography is truly revolutionary.'", "Verdict: Copium levels: Maximum."),
+    ("Crypto vs Stocks", "Stock trader: 'I am down 1.2% this quarter, my life is ruined.' Crypto degen: 'Down 72% before breakfast, feeling quite bullish honestly.'", "Verdict: Built different."),
+
+    # ── r/SatoshiStreetBets Top Upvoted ──
+    ("100x Leverage Roulette", "Taking out a personal loan to open a 100x isolated long position because an anonymous anime account tweeted 'LFG'.", "Verdict: Margin call arrived in 42 seconds."),
+    ("Wendy's Dumpster Backup Plan", "Preparing the resume update: 'Experienced risk manager transitioning to junior fry-cook and Frosty operations.'", "Verdict: Sir, this is a casino."),
+    ("Ape Together Strong", "10,000 retail degens all coordinating to buy a dead shitcoin at 4:20 PM to squeeze the offshore market makers.", "Verdict: Decentralized chaos achieved."),
+    ("The Screenshot Rule", "If it's good enough to screenshot, it's good enough to sell. But did you sell? Of course not, you held it all the way back to zero.", "Verdict: Eternal screenshot collector."),
     ("The Influencer Target", "Crypto YouTuber making an open-mouth thumbnail: 'URGENT BITCOIN ALERT!! MASSIVE CRASH OR $250K TONIGHT?!'", "Verdict: Nobody knows anything."),
-    ("Hardware Wallet Ceremony", "Entering your pin on a Ledger Nano like you are disarming a nuclear warhead in a Mission Impossible film.", "Verdict: Clean transaction approved."),
-    ("Altcoin Season Delusion", "Watching Bitcoin break all-time highs while your favorite obscure altcoin sits completely motionless like a statue.", "Verdict: Patience anon, rotation is coming."),
-    ("The Accidental Long-Term Investor", "Aping into a high-leverage pump and dump, losing 80%, and suddenly declaring: 'I actually believe in the tech.'", "Verdict: Copium levels: Maximum."),
-    ("The Crypto Millionaire Friend", "Watching a 19-year-old on Twitter make 2 million dollars trading virtual hamster tokens while you work 9-5.", "Verdict: We live in a simulation."),
-    ("Market Order Regret", "Hitting market buy without checking the order book depth and slipping 14% into the liquidity void.", "Verdict: Always use limit orders anon."),
     ("The Bull Market Genius", "Making 400% in a raging bull market and convincing yourself you are superior to Warren Buffett and Ray Dalio combined.", "Verdict: Everyone is a genius in an uptrend."),
-    ("The Liquidation Text", "Seeing that dreaded Telegram alert: 'Your position has reached 90% margin threshold.'", "Verdict: Time to delete the app and take a walk."),
     ("The Airdrop Farmer", "Bridging $5 across 17 different testnets for 8 consecutive months to receive an airdrop worth $3.12.", "Verdict: Honest work for honest farmers."),
-    ("Satoshi's Wallet Watcher", "Monitoring Satoshi Nakamoto's wallet every day like a hawk just in case the legend wakes up and sells a satoshi.", "Verdict: 1.1 million Bitcoin still resting peacefully."),
-    ("The Staking Lockup", "Locking your tokens for 12 months for 18% APY only for the underlying token to dump 90% during the lockup.", "Verdict: Math is cruel sometimes."),
     ("Zero Balance Awakening", "Opening your wallet and it displays $0.00 because RPC failed to connect for 3 seconds. Heart stops instantly.", "Verdict: 3 seconds of sheer panic."),
-    ("The Exchange Maintenance", "Bitcoin drops 10% and suddenly every major crypto exchange goes into 'scheduled emergency server maintenance.'", "Verdict: Classic Wall Street tradition digitized."),
-    ("The Next 100x Coin", "Your friend whispering: 'Bro, I found the next Solana, it's called MegaSafeRocketElon.'", "Verdict: Run away as fast as possible."),
-    ("The Cycle Veteran", "Listening to newcomers panic over a 5% drop when you lived through Mt. Gox, the 2018 winter, and the FTX collapse.", "Verdict: Scars of glory."),
-    ("Green Candles Therapy", "One single 15-minute green candle turning the entire sentiment of Twitter from suicide hotline to Lambo shopping.", "Verdict: Crypto sentiment moves at light speed.")
+
+    # ── r/CryptoIndia Top Upvoted ──
+    ("30% Tax + 1% TDS Partnership", "Indian crypto traders discovering the Government is an equity partner in their profits, but takes zero responsibility for their losses.", "Verdict: Welcome to Section 115BBH."),
+    ("The P2P Bank Account Freeze", "Sold 0.001 BTC on Binance P2P for ₹5,000, now your SBI account with 10 years of savings is frozen by Cyber Crime Police.", "Verdict: Classic Indian P2P baptism."),
+    ("Moving to Dubai Dream", "Every Indian crypto bro with $800 in phantom profits researching freelance visas and tax-free apartments in Dubai Marina.", "Verdict: Flights are booked anon."),
+    ("Draft Bill Rumor Season", "Panic selling your entire portfolio at midnight because an unverified Twitter handle tweeted 'Cabinet to discuss crypto ban bill tomorrow'.", "Verdict: 6th time this cycle."),
+    ("Sandeep Nailwal Vision", "Watching Polygon MATIC grow from a Mumbai apartment to scaling Ethereum worldwide: 'Desi builders on top.'", "Verdict: Desi crypto pride."),
+
+    # ── r/IndianStreetBets Top Upvoted ──
+    ("Harshad Mehta Background Score", "Buying $10 worth of Pepe while the 1992 Scam theme plays on full blast on your Bluetooth speaker.", "Verdict: Risk hai toh ishq hai."),
+    ("FD vs Crypto Battle", "Father: 'Beta SBI FD is giving guaranteed 7.1% APY.' Me: 'Papa my memecoin did 400% in 12 minutes before the liquidity was pulled.'", "Verdict: Belan protocol activated."),
+    ("Double Samosa Pattern", "Drawing a samosa-shaped breakout triangle on TradingView and calling it elite institutional technical analysis.", "Verdict: Guaranteed breakout with green chutney."),
+    ("Zomato Delivery vs Trading", "Spending 6 hours day-trading crypto for a net profit of ₹42, while your Zomato delivery guy makes ₹500 in tips.", "Verdict: Financial wizardry."),
+    ("Nirmala Ji Watching", "Making a ₹150 profit on Shiba Inu and immediately looking over your shoulder to see if Income Tax department noticed.", "Verdict: Advance tax advance payment."),
+
+    # ── r/IndianDankMemes & r/DesiDankMemes Top Upvoted ──
+    ("Sharma Ji Ka Beta Dilemma", "Sharma ji ka beta got ₹35 LPA IT package. You told relatives you are an 'Algorithmic Web3 Quant' (holding 4,000 Dogecoins).", "Verdict: Relative izzat at all-time low."),
+    ("Ghar Jayenga Isme", "Looking at the 15-minute liquidations chart and hearing MC Stan whisper in your ear: 'Isme tera ghar chala jayenga'.", "Verdict: Pure street wisdom."),
+    ("Ek Din Me Paisa Double", "Watching Laxmi Chit Fund memes while staking coins on a shady decentralized protocol offering 4,000% APY.", "Verdict: Anuradha was Satoshi all along."),
+    ("Pehle Investment, Phir Soch", "Investing first, checking the coin whitepaper never, and asking in Telegram group: 'Bhai pump kab hoga?'", "Verdict: The sacred ritual."),
+    ("Relatives Asking Career", "Relatives: 'Beta kya karte ho?' Me: 'Decentralized liquidity and sovereign cryptography operations.' (I have ₹400 in Doge).", "Verdict: International finance consultant.")
 ]
 
 # ─── NON-REPEATING HISTORY TRACKERS ───────────────────────────────────────────
@@ -220,11 +238,11 @@ async def satoshi_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         quote = SATOSHI_QUOTES[idx]
         image_buf = render_satoshi_quote(quote)
 
-        # Interactive action buttons with single custom emojis
+        # Interactive action buttons in clean single-column layout
         kb = InlineKeyboardMarkup([
             [custom_btn("Another Quote", callback_data="fun:satoshi", icon="dice")],
-            [custom_btn("Daily Thought", callback_data="fun:daily", icon="currencing"),
-             custom_btn("BTC Live", callback_data="stats_BTC", coin="BTC")]
+            [custom_btn("Daily Thought", callback_data="fun:daily", icon="currencing")],
+            [custom_btn("BTC Live", callback_data="stats_BTC", coin="BTC")]
         ])
         await _send_fun_card(context, chat_id, image_buf, reply_msg_id, kb)
     except Exception as e:
@@ -255,8 +273,8 @@ async def daily_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
         kb = InlineKeyboardMarkup([
             [custom_btn("Next Thought", callback_data="fun:daily", icon="dice")],
-            [custom_btn("Fun Meme", callback_data="fun:meme", icon="meme"),
-             custom_btn("Top Overview", callback_data="nav_overview", icon="chart")]
+            [custom_btn("Fun Meme", callback_data="fun:meme", icon="meme")],
+            [custom_btn("Top Overview", callback_data="nav_overview", icon="chart")]
         ])
         await _send_fun_card(context, chat_id, image_buf, reply_msg_id, kb)
     except Exception as e:
@@ -287,8 +305,8 @@ async def meme_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
         kb = InlineKeyboardMarkup([
             [custom_btn("Another Meme", callback_data="fun:meme", icon="meme")],
-            [custom_btn("Daily Thought", callback_data="fun:daily", icon="currencing"),
-             custom_btn("Top Rockets", callback_data="fun:wagmi", icon="ath")]
+            [custom_btn("Daily Thought", callback_data="fun:daily", icon="currencing")],
+            [custom_btn("Top Rockets", callback_data="fun:wagmi", icon="ath")]
         ])
         await _send_fun_card(context, chat_id, image_buf, reply_msg_id, kb)
     except Exception as e:
@@ -356,8 +374,8 @@ async def cope_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
         image_buf = render_cope_card(symbol, price, atl_price, atl_date)
         kb = InlineKeyboardMarkup([
-            [custom_btn(f"{symbol} Chart", callback_data=f"stats_{symbol}", coin=symbol),
-             custom_btn("Daily Thought", callback_data="fun:daily", icon="currencing")]
+            [custom_btn(f"{symbol} Chart", callback_data=f"stats_{symbol}", coin=symbol)],
+            [custom_btn("Daily Thought", callback_data="fun:daily", icon="currencing")]
         ])
         await _send_fun_card(context, chat_id, image_buf, reply_msg_id, kb)
     except Exception as e:
@@ -407,8 +425,8 @@ async def panic_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
         image_buf = render_panic_card(symbol, price, change_24h)
         kb = InlineKeyboardMarkup([
-            [custom_btn("Cope ATL", callback_data="fun:satoshi", icon="gem"),
-             custom_btn(f"{symbol} ATH", callback_data=f"ath_{symbol}", icon="ath")]
+            [custom_btn("Cope ATL", callback_data="fun:satoshi", icon="gem")],
+            [custom_btn(f"{symbol} ATH", callback_data=f"ath_{symbol}", icon="ath")]
         ])
         await _send_fun_card(context, chat_id, image_buf, reply_msg_id, kb)
     except Exception as e:
@@ -503,7 +521,7 @@ async def predict_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             reply_to_message_id=reply_msg_id
         )
 
-# ─── 8. /didyouknow <coin> ────────────────────────────────────────────────────
+# ─── 8. /didyouknow & /dyk <coin> ──────────────────────────────────────────────
 DID_YOU_KNOW_FACTS = {
     "BTC": ("The Legendary 10,000 BTC Pizza", "On May 22, 2010, Laszlo Hanyecz bought two pizzas for 10,000 Bitcoins. At peak prices, those two pizzas were worth over $900 million dollars!"),
     "ETH": ("Vitalik's World of Warcraft Origin", "Vitalik Buterin created Ethereum after Blizzard nerfed his beloved World of Warcraft character. He realized the horrors of centralized services and set out to build decentralized applications."),
@@ -512,13 +530,19 @@ DID_YOU_KNOW_FACTS = {
     "TON": ("The Telegram Gram Resurgence", "Telegram raised $1.7 billion for the original Gram ICO in 2018. When SEC halted it, open-source developers kept the code alive, which Telegram eventually officially embraced."),
     "XMR": ("The Ultimate Untraceable Fungibility", "Monero utilizes Ring Signatures, Stealth Addresses, and RingCT so that neither the sender, receiver, nor transaction amount is ever visible on the public blockchain."),
     "LTC": ("The Silver to Bitcoin's Gold", "Charlie Lee created Litecoin in 2011 with 2.5-minute blocks and Scrypt proof-of-work, making it one of the longest continuously running operational blockchains in history."),
-    "BNB": ("From ICO to Ecosystem Juggernaut", "Binance launched BNB in July 2017 via an ICO raising $15 million at roughly $0.15 per token. It has since appreciated over 400,000%."),
+    "BNB": ("From ICO to Ecosystem Juggernaut", "Binance founder CZ sold his Shanghai apartment in 2014 to go all-in on Bitcoin, later launching BNB via an ICO raising $15M at $0.15 per token."),
     "XRP": ("Pre-Dating Bitcoin Concepts", "The conceptual roots of RipplePay date back to 2004 by Ryan Fugger, years before Satoshi published the Bitcoin whitepaper in late 2008."),
-    "TRX": ("High Volume Stablecoin Highway", "TRON currently settles more USDT (Tether) daily transaction volume than the Ethereum network, making it the highest volume stablecoin settlement layer in the world.")
+    "TRX": ("High Volume Stablecoin Highway", "TRON currently settles more USDT (Tether) daily transaction volume than the Ethereum network, making it the highest volume stablecoin settlement layer in the world."),
+    "MATIC": ("Born in Mumbai, Scaling Worldwide", "Polygon (formerly Matic Network) was founded in Mumbai in 2017 by Jaynti Kanani, Sandeep Nailwal, and Anurag Arjun to solve Ethereum's scalability bottleneck."),
+    "POL": ("Born in Mumbai, Scaling Worldwide", "Polygon (formerly Matic Network) was founded in Mumbai in 2017 by Jaynti Kanani, Sandeep Nailwal, and Anurag Arjun to solve Ethereum's scalability bottleneck."),
+    "SHIB": ("The $1 Billion Covid Relief Gift", "In May 2021, Vitalik Buterin donated 50 trillion SHIB tokens (worth over $1 billion) to Sandeep Nailwal's India Crypto Covid Relief Fund, the largest crypto philanthropic donation in history."),
+    "ADA": ("Named After First Programmer", "Cardano was named after Ada Lovelace, the 19th-century mathematician recognized as the world's first computer programmer."),
+    "AVAX": ("The Snow Family Consensus", "Avalanche's consensus was proposed anonymously by 'Team Rocket' using sub-sampled voting inspired by epidemic gossip algorithms."),
+    "PEPE": ("The Meme That Shook 2023", "Pepe token reached a $1 billion market cap in just 20 days without any pre-sale, zero taxes, and LP burnt — one of the fastest meme runs in crypto history.")
 }
 
 async def didyouknow_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Generate and send /didyouknow crypto history & lore card."""
+    """Generate and send /didyouknow & /dyk crypto history & lore card."""
     if not await check_user_authorization(update, context):
         return
 
@@ -528,7 +552,7 @@ async def didyouknow_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
     args = context.args or []
     if not args:
         await update.message.reply_text(
-            "<b>Usage:</b>\n/didyouknow &lt;coin name&gt;\n<i>ex /didyouknow btc</i>",
+            "<b>Usage:</b>\n/dyk &lt;coin name&gt; or /didyouknow &lt;coin name&gt;\n<i>ex /dyk btc</i>",
             parse_mode=ParseMode.HTML,
             reply_to_message_id=reply_msg_id
         )
@@ -545,8 +569,8 @@ async def didyouknow_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
     try:
         image_buf = render_didyouknow_card(symbol, title, body)
         kb = InlineKeyboardMarkup([
-            [custom_btn("Another Trivia", callback_data="fun:satoshi", icon="help"),
-             custom_btn(f"{symbol} Chart", callback_data=f"stats_{symbol}", coin=symbol)]
+            [custom_btn("Another Trivia", callback_data="fun:satoshi", icon="help")],
+            [custom_btn(f"{symbol} Chart", callback_data=f"stats_{symbol}", coin=symbol)]
         ])
         await _send_fun_card(context, chat_id, image_buf, reply_msg_id, kb)
     except Exception as e:

@@ -14,10 +14,8 @@ logger = logging.getLogger(__name__)
 def make_start_keyboard(bot_username: str) -> InlineKeyboardMarkup:
     """Generate aesthetic minimal inline keyboard for /start with custom emoji icons."""
     return InlineKeyboardMarkup([
-        [
-            custom_btn("Add bot to chat ↗", url=f"https://t.me/{bot_username}?startgroup=start", icon="group"),
-            custom_btn("View Help Menu", callback_data="help:menu", icon="help")
-        ]
+        [custom_btn("Add bot to chat ↗", url=f"https://t.me/{bot_username}?startgroup=start", icon="group")],
+        [custom_btn("View Help Menu", callback_data="help:menu", icon="help")]
     ])
 
 def get_clean_help_text(bot_username: str) -> str:
@@ -42,7 +40,7 @@ def get_clean_help_text(bot_username: str) -> str:
         f"• /panic &lt;coin&gt; — Emergency panic index & calming checklist\n"
         f"• /wagmi — Today's top rocket market gainers\n"
         f"• /predict &lt;coin&gt; — Technical price target prediction\n"
-        f"• /didyouknow &lt;coin&gt; — Interesting crypto history and trivia\n"
+        f"• /dyk, /didyouknow &lt;coin&gt; — Interesting crypto history and trivia\n"
         f"• /me — Your personal usage intelligence recap\n"
         f"• /firstseen &lt;coin&gt; — Price change since you first checked\n"
         f"• /lookup &lt;coin&gt; — Your last check vs the price now\n"

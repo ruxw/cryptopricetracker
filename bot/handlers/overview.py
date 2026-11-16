@@ -33,12 +33,8 @@ async def overview_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         overview_data = await crypto_service.get_all_overview_data()
         image_buf = await get_cached_or_render(render_market_overview, overview_data, ttl=15.0)
 
-        kb = InlineKeyboardMarkup([
-            [custom_btn("Refresh Overview", callback_data="refresh_overview", icon="refresh")],
-            [custom_btn("Daily Thought", callback_data="fun:daily", icon="currencing"),
-             custom_btn("Fun Meme", callback_data="fun:meme", icon="meme")]
-        ])
-        sp_caption, sp_markup = await attach_sponsored_content(reply_markup=kb)
+        # Only include active sponsored button if configured (clean card, no extra cluttered buttons)
+        sp_caption, sp_markup = await attach_sponsored_content(reply_markup=None)
 
         send_kwargs = {
             "chat_id": chat_id,
@@ -85,12 +81,8 @@ async def overview_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         overview_data = await crypto_service.get_all_overview_data()
         image_buf = await get_cached_or_render(render_market_overview, overview_data, ttl=15.0)
 
-        kb = InlineKeyboardMarkup([
-            [custom_btn("Refresh Overview", callback_data="refresh_overview", icon="refresh")],
-            [custom_btn("Daily Thought", callback_data="fun:daily", icon="currencing"),
-             custom_btn("Fun Meme", callback_data="fun:meme", icon="meme")]
-        ])
-        sp_caption, sp_markup = await attach_sponsored_content(reply_markup=kb)
+        # Only include active sponsored button if configured (clean card, no extra cluttered buttons)
+        sp_caption, sp_markup = await attach_sponsored_content(reply_markup=None)
 
         send_kwargs = {
             "chat_id": chat_id,
