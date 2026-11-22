@@ -414,6 +414,11 @@ async def fun_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         await meme_command(update, context)
     elif data == "fun:wagmi":
         await wagmi_command(update, context)
+    elif data.startswith("fun:dyk"):
+        parts = data.split(":")
+        coin_arg = parts[2] if len(parts) > 2 else ""
+        context.args = [coin_arg] if coin_arg else []
+        await didyouknow_command(update, context)
 
 # ─── 4. /cope <coin> ──────────────────────────────────────────────────────────
 async def cope_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -603,23 +608,144 @@ async def predict_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         )
 
 # ─── 8. /didyouknow & /dyk <coin> ──────────────────────────────────────────────
-DID_YOU_KNOW_FACTS = {
-    "BTC": ("The Legendary 10,000 BTC Pizza", "On May 22, 2010, Laszlo Hanyecz bought two pizzas for 10,000 Bitcoins. At peak prices, those two pizzas were worth over $900 million dollars!"),
-    "ETH": ("Vitalik's World of Warcraft Origin", "Vitalik Buterin created Ethereum after Blizzard nerfed his beloved World of Warcraft character. He realized the horrors of centralized services and set out to build decentralized applications."),
-    "SOL": ("Proof of History Breakthrough", "Solana was conceptualized by Anatoly Yakovenko while drinking coffee and beer. He realized time could be verified cryptographically through recursive SHA-256 hashing, solving the clock synchronization problem."),
-    "DOGE": ("Created in 3 Hours as a Joke", "Billy Markus and Jackson Palmer coded Dogecoin in roughly 3 hours in 2013 by forking Luckycoin and replacing the font with Comic Sans. It went on to reach an $80 billion market cap."),
-    "TON": ("The Telegram Gram Resurgence", "Telegram raised $1.7 billion for the original Gram ICO in 2018. When SEC halted it, open-source developers kept the code alive, which Telegram eventually officially embraced."),
-    "XMR": ("The Ultimate Untraceable Fungibility", "Monero utilizes Ring Signatures, Stealth Addresses, and RingCT so that neither the sender, receiver, nor transaction amount is ever visible on the public blockchain."),
-    "LTC": ("The Silver to Bitcoin's Gold", "Charlie Lee created Litecoin in 2011 with 2.5-minute blocks and Scrypt proof-of-work, making it one of the longest continuously running operational blockchains in history."),
-    "BNB": ("From ICO to Ecosystem Juggernaut", "Binance founder CZ sold his Shanghai apartment in 2014 to go all-in on Bitcoin, later launching BNB via an ICO raising $15M at $0.15 per token."),
-    "XRP": ("Pre-Dating Bitcoin Concepts", "The conceptual roots of RipplePay date back to 2004 by Ryan Fugger, years before Satoshi published the Bitcoin whitepaper in late 2008."),
-    "TRX": ("High Volume Stablecoin Highway", "TRON currently settles more USDT (Tether) daily transaction volume than the Ethereum network, making it the highest volume stablecoin settlement layer in the world."),
-    "MATIC": ("Born in Mumbai, Scaling Worldwide", "Polygon (formerly Matic Network) was founded in Mumbai in 2017 by Jaynti Kanani, Sandeep Nailwal, and Anurag Arjun to solve Ethereum's scalability bottleneck."),
-    "POL": ("Born in Mumbai, Scaling Worldwide", "Polygon (formerly Matic Network) was founded in Mumbai in 2017 by Jaynti Kanani, Sandeep Nailwal, and Anurag Arjun to solve Ethereum's scalability bottleneck."),
-    "SHIB": ("The $1 Billion Covid Relief Gift", "In May 2021, Vitalik Buterin donated 50 trillion SHIB tokens (worth over $1 billion) to Sandeep Nailwal's India Crypto Covid Relief Fund, the largest crypto philanthropic donation in history."),
-    "ADA": ("Named After First Programmer", "Cardano was named after Ada Lovelace, the 19th-century mathematician recognized as the world's first computer programmer."),
-    "AVAX": ("The Snow Family Consensus", "Avalanche's consensus was proposed anonymously by 'Team Rocket' using sub-sampled voting inspired by epidemic gossip algorithms."),
-    "PEPE": ("The Meme That Shook 2023", "Pepe token reached a $1 billion market cap in just 20 days without any pre-sale, zero taxes, and LP burnt — one of the fastest meme runs in crypto history.")
+_DYK_HISTORY: Dict[int, deque] = {}
+
+DID_YOU_KNOW_FACTS: Dict[str, List[Tuple[str, str]]] = {
+    "BTC": [
+        ("The Legendary 10,000 BTC Pizza", "On May 22, 2010, Laszlo Hanyecz bought two pizzas for 10,000 Bitcoins. At peak prices, those two pizzas were worth over $900 million dollars!"),
+        ("Satoshi's Genesis Block Message", "Embedded in Bitcoin's Genesis block is the headline: 'The Times 03/Jan/2009 Chancellor on brink of second bailout for banks' — a permanent critique of fractional reserve banking."),
+        ("The Lost Million Bitcoins", "Satoshi Nakamoto is estimated to own over 1.1 million Bitcoins across thousands of early blocks, none of which have moved since 2010."),
+        ("The 21 Million Mathematical Limit", "Due to block reward halvings occurring every 210,000 blocks, the total supply of Bitcoin will never exceed 20,999,999.9769 BTC, expected around the year 2140.")
+    ],
+    "ETH": [
+        ("Vitalik's World of Warcraft Origin", "Vitalik Buterin created Ethereum after Blizzard nerfed his beloved World of Warcraft character. He realized the horrors of centralized services and set out to build decentralized applications."),
+        ("The Merge Cut Energy by 99.95%", "In September 2022, Ethereum transitioned from Proof-of-Work to Proof-of-Stake in 'The Merge', slashing its worldwide electricity consumption by more than 99.95% overnight."),
+        ("The First ICO & The DAO Hack", "Ethereum raised 31,500 BTC in 2014 during its crowd sale. In 2016, the $60M DAO hack forced a controversial hard fork that split Ethereum into ETH and Ethereum Classic (ETC)."),
+        ("Smart Contracts Pioneer", "Nick Szabo conceived smart contracts in 1994, but Ethereum was the first Turing-complete blockchain that brought automated programmable agreements into global reality.")
+    ],
+    "SOL": [
+        ("Proof of History Breakthrough", "Solana was conceptualized by Anatoly Yakovenko while drinking coffee and beer. He realized time could be verified cryptographically through recursive SHA-256 hashing, solving the clock synchronization problem."),
+        ("Named After Solana Beach", "Solana was named after Solana Beach, a small coastal town in San Diego County where founders Anatoly, Greg, and Stephen lived and surfed while working at Qualcomm."),
+        ("Sub-Second Finality", "Solana processes blocks every 400 milliseconds, allowing decentralized applications to achieve the responsiveness and execution speed of traditional Web2 infrastructure."),
+        ("Tower BFT Consensus", "Solana utilizes Tower BFT, a PBFT-like consensus algorithm designed specifically to take advantage of the synchronized clock provided by Proof of History.")
+    ],
+    "GRAM": [
+        ("The Telegram Gram Resurgence", "Telegram raised $1.7 billion for the original Gram ICO in 2018. When SEC halted it, open-source developers kept the code alive, which Telegram eventually officially embraced."),
+        ("Infinite Sharding Architecture", "TON was designed by Nikolai Durov with dynamic sharding, allowing the network to split into split-chains and shard-chains to process millions of transactions per second."),
+        ("Integrated Telegram Ecosystem", "With over 900 million active Telegram users, TON enables peer-to-peer crypto transfers, usernames, virtual phone numbers, and mini-apps directly inside chat."),
+        ("World Record TPS Test", "In October 2023, TON officially set a world record by achieving 104,715 transactions per second in a stress test certified by CertiK.")
+    ],
+    "TON": [
+        ("The Telegram Gram Resurgence", "Telegram raised $1.7 billion for the original Gram ICO in 2018. When SEC halted it, open-source developers kept the code alive, which Telegram eventually officially embraced."),
+        ("Infinite Sharding Architecture", "TON was designed by Nikolai Durov with dynamic sharding, allowing the network to split into split-chains and shard-chains to process millions of transactions per second."),
+        ("Integrated Telegram Ecosystem", "With over 900 million active Telegram users, TON enables peer-to-peer crypto transfers, usernames, virtual phone numbers, and mini-apps directly inside chat."),
+        ("World Record TPS Test", "In October 2023, TON officially set a world record by achieving 104,715 transactions per second in a stress test certified by CertiK.")
+    ],
+    "DOGE": [
+        ("Created in 3 Hours as a Joke", "Billy Markus and Jackson Palmer coded Dogecoin in roughly 3 hours in 2013 by forking Luckycoin and replacing the font with Comic Sans. It went on to reach an $80 billion market cap."),
+        ("Funded the Jamaican Bobsled Team", "In 2014, the Dogecoin community raised over $30,000 worth of DOGE to send the Jamaican bobsled team to the Sochi Winter Olympics after they qualified but lacked funds."),
+        ("DOGE-1 Space Mission", "Geometric Energy Corporation paid SpaceX entirely in Dogecoin to launch the DOGE-1 satellite to the Moon, marking the first commercial lunar payload paid entirely in cryptocurrency.")
+    ],
+    "XMR": [
+        ("The Ultimate Untraceable Fungibility", "Monero utilizes Ring Signatures, Stealth Addresses, and RingCT so that neither the sender, receiver, nor transaction amount is ever visible on the public blockchain."),
+        ("Fungibility Without Tainted Coins", "Unlike transparent blockchains where coins can be blacklisted or 'tainted' by previous transactions, every Monero unit is completely fungible and identical to every other."),
+        ("Tail Emission Guarantee", "Monero has a perpetual 'tail emission' of 0.6 XMR per 2-minute block, ensuring miners are perpetually incentivized to secure the network even after all primary coins are mined.")
+    ],
+    "LTC": [
+        ("The Silver to Bitcoin's Gold", "Charlie Lee created Litecoin in 2011 with 2.5-minute blocks and Scrypt proof-of-work, making it one of the longest continuously running operational blockchains in history."),
+        ("The Testbed for SegWit & Lightning", "Litecoin activated Segregated Witness (SegWit) and completed the first cross-chain atomic swap with Bitcoin months before Bitcoin itself adopted the technology."),
+        ("Zero Downtime Record", "Litecoin has operated continuously since October 2011 with 100% network uptime, maintaining unbroken reliability across multiple bear and bull cycles.")
+    ],
+    "BNB": [
+        ("From ICO to Ecosystem Juggernaut", "Binance founder CZ sold his Shanghai apartment in 2014 to go all-in on Bitcoin, later launching BNB via an ICO raising $15M at $0.15 per token."),
+        ("The Quarterly Auto-Burn Protocol", "Binance uses an automated formula based on BNB price and blocks produced to burn tokens quarterly, permanently removing supply until 100 million BNB remain."),
+        ("From ERC-20 to Layer 1", "BNB initially launched as an ERC-20 token on Ethereum before migrating to its own sovereign high-throughput network powering the BNB Chain ecosystem.")
+    ],
+    "XRP": [
+        ("Pre-Dating Bitcoin Concepts", "The conceptual roots of RipplePay date back to 2004 by Ryan Fugger, years before Satoshi published the Bitcoin whitepaper in late 2008."),
+        ("Consensus Without Mining", "XRP uses the Ripple Protocol Consensus Algorithm (RPCA) rather than proof-of-work, enabling transactions to settle in 3 to 5 seconds with negligible energy use."),
+        ("The Landmark SEC Legal Ruling", "In July 2023, a US Federal District Court ruled that programmatic sales of XRP on secondary exchanges do not constitute investment contracts, marking a historic crypto legal victory.")
+    ],
+    "TRX": [
+        ("High Volume Stablecoin Highway", "TRON currently settles more USDT (Tether) daily transaction volume than the Ethereum network, making it the highest volume stablecoin settlement layer in the world."),
+        ("Acquisition of BitTorrent", "In 2018, Tron founder Justin Sun acquired BitTorrent for $140 million, integrating the world's largest peer-to-peer file-sharing protocol with blockchain incentives."),
+        ("Delegated Proof of Stake", "Tron uses 27 Super Representatives (SRs) elected by TRX holders every 6 hours to produce blocks and validate transactions at 2,000 TPS.")
+    ],
+    "LINK": [
+        ("The Universal Decentralized Oracle", "Chainlink was pioneered by Sergey Nazarov in 2017 to solve the 'Oracle Problem' — securely bridging smart contracts with real-world off-chain data and APIs."),
+        ("Securing Hundreds of Billions", "Chainlink Price Feeds secure over $20 billion in Total Value Locked across DeFi protocols including Aave, Compound, Synthetix, and major enterprise banking pilots."),
+        ("CCIP Cross-Chain Standard", "Chainlink Cross-Chain Interoperability Protocol (CCIP) connects traditional banking giants like Swift, DTCC, and Euroclear to public and private blockchains.")
+    ],
+    "NEAR": [
+        ("Nightshade Dynamic Sharding", "NEAR Protocol uses Nightshade sharding, which splits blocks across multiple parallel shards to achieve virtually unlimited throughput and sub-second finality."),
+        ("Human-Readable Named Accounts", "Unlike complex hex addresses, NEAR accounts are human-readable by default (e.g., 'alice.near'), enabling seamless onboarding and account abstraction."),
+        ("AI Pioneers Turned Blockchain Founders", "NEAR co-founder Illia Polosukhin was one of the 8 authors of Google's seminal 2017 paper 'Attention Is All You Need', which invented the Transformer AI architecture!")
+    ],
+    "SUI": [
+        ("Object-Centric Move Language", "Sui was built by Mysten Labs (former Meta Diem engineers) using an object-centric data model, allowing parallel transaction execution without global state locks."),
+        ("Sub-Second Finality via Mysticeti", "Sui utilizes Mysticeti consensus to finalize transactions in under 400 milliseconds, among the lowest latency of any production blockchain."),
+        ("Dynamic & Upgradable NFTs", "On Sui, assets and NFTs can evolve, change metadata, and own other assets directly on-chain, unlocking next-generation Web3 gaming economies.")
+    ],
+    "APT": [
+        ("Born from Meta's Diem Project", "Aptos was founded by former Meta engineers Mo Shaikh and Avery Ching, leveraging years of research on the Move programming language and Diem blockchain."),
+        ("Block-STM Parallel Execution", "Aptos utilizes Block-STM (Software Transactional Memory) to execute transactions in parallel without requiring developers to declare dependencies upfront."),
+        ("AptosBFT State Synchronization", "Aptos uses an advanced BFT consensus that separates transaction consensus from execution, achieving rapid confirmation times and low fees.")
+    ],
+    "DOT": [
+        ("Created by Ethereum Co-Founder", "Polkadot was founded by Dr. Gavin Wood, who co-founded Ethereum, wrote the Ethereum Yellow Paper, and invented the Solidity smart contract language."),
+        ("Heterogeneous Multi-Chain Framework", "Polkadot connects specialized sovereign parachains to a shared Relay Chain, providing pooled security and trustless cross-consensus messaging (XCM)."),
+        ("Forkless On-Chain Upgrades", "Polkadot can upgrade its entire codebase on-chain through WebAssembly meta-protocols without requiring contentious hard forks or chain splits.")
+    ],
+    "ICP": [
+        ("The Internet Computer Vision", "Created by Dominic Williams and the DFINITY Foundation, ICP runs software containers directly on the web at web speed, eliminating cloud infrastructure like AWS."),
+        ("Chain Key Cryptography", "ICP uses Chain Key Cryptography with a single 48-byte public key to coordinate thousands of independent subnet nodes and sign transactions on Bitcoin and Ethereum."),
+        ("Reverse Gas Model", "On ICP, developers pay the 'cycles' (gas) required to run canister smart contracts, meaning end users can browse and interact with Web3 apps completely free of fees.")
+    ],
+    "UNI": [
+        ("Created by a Laid-Off Engineer", "Hayden Adams built Uniswap in 2018 after being laid off from Siemens. Encouraged by a tweet from Vitalik Buterin, he taught himself Ethereum development from scratch."),
+        ("The Automated Market Maker Revolution", "Uniswap pioneered the Constant Product Formula (x * y = k), replacing traditional order books with liquidity pools and igniting the 2020 DeFi Summer."),
+        ("The Surprise $1,200 UNI Airdrop", "In September 2020, Uniswap airdropped 400 UNI tokens to every single historical user. At all-time highs, that gift was worth over $18,000 per wallet.")
+    ],
+    "BCH": [
+        ("The Blocksize War of 2017", "Bitcoin Cash originated from an ideological hard fork in August 2017 over block size limits, with BCH proponents advocating 8MB (now 32MB) blocks for cheap peer-to-peer cash."),
+        ("Sub-Cent Global Transactions", "By scaling on-chain block capacity, Bitcoin Cash transactions reliably cost fractions of a cent, making microtransactions and retail point-of-sale payments practical."),
+        ("SmartBCH & CashTokens", "Bitcoin Cash supports CashTokens, enabling native tokens, decentralized applications, and smart contracts directly on the UTXO model.")
+    ],
+    "XLM": [
+        ("Founded by Mt. Gox & Ripple Creator", "Jed McCaleb co-founded Stellar in 2014 after previously creating eDonkey2000, Mt. Gox, and Ripple, focusing on non-profit financial inclusion."),
+        ("Stellar Consensus Protocol (SCP)", "Designed by Stanford Professor David Mazières, SCP uses Federated Byzantine Agreement (FBA) to achieve 3-5 second settlement with zero energy waste."),
+        ("Powering Global Remittances", "MoneyGram and international NGOs use Stellar to disburse cross-border aid and remittances directly to digital wallets and physical cash pickup locations.")
+    ],
+    "PEPE": [
+        ("The Meme That Shook 2023", "Pepe token reached a $1 billion market cap in just 20 days without any pre-sale, zero taxes, and LP burnt — one of the fastest meme runs in crypto history."),
+        ("Matt Furie's Iconic Character", "Pepe the Frog was created by artist Matt Furie in 2005 in his 'Boy's Club' comic before evolving into the universal symbol of internet and crypto culture."),
+        ("Fair Launch Ethos", "Pepe launched stealthily with no VC backing or roadmap, relying entirely on viral community memetics and pure decentralized culture.")
+    ],
+    "SHIB": [
+        ("The $1 Billion Covid Relief Gift", "In May 2021, Vitalik Buterin donated 50 trillion SHIB tokens (worth over $1 billion) to Sandeep Nailwal's India Crypto Covid Relief Fund, the largest crypto philanthropic donation in history."),
+        ("Burning Half the Supply to Vitalik", "Ryoshi, the pseudonymous creator of Shiba Inu, sent 50% of the total SHIB supply to Vitalik Buterin's public wallet, believing he would never sell or dump them."),
+        ("From Meme to Layer 2 Shibarium", "Shiba Inu evolved from a simple ERC-20 token into a full ecosystem with decentralized exchange ShibaSwap, Metaverse land, and its own Shibarium Layer-2 network.")
+    ],
+    "ADA": [
+        ("Named After First Programmer", "Cardano was named after Ada Lovelace, the 19th-century mathematician recognized as the world's first computer programmer."),
+        ("Peer-Reviewed Scientific Philosophy", "Cardano is built upon peer-reviewed academic research, developed with the formal verification language Haskell and the Ouroboros Proof-of-Stake protocol."),
+        ("Byron to Voltaire Roadmap", "Cardano's roadmap is divided into five poetic eras: Byron (foundation), Shelley (decentralization), Goguen (smart contracts), Basho (scaling), and Voltaire (governance).")
+    ],
+    "AVAX": [
+        ("The Snow Family Consensus", "Avalanche's consensus was proposed anonymously by 'Team Rocket' using sub-sampled voting inspired by epidemic gossip algorithms."),
+        ("Three-Chain Architecture", "Avalanche divides network responsibilities across three built-in blockchains: the X-Chain (assets), P-Chain (platform/validators), and C-Chain (EVM smart contracts)."),
+        ("Custom Subnet Ecosystem", "Avalanche enables institutions and game studios to spin up sovereign, compliant subnets with custom gas tokens and validator rules while retaining Avalanche security.")
+    ],
+    "MATIC": [
+        ("Born in Mumbai, Scaling Worldwide", "Polygon (formerly Matic Network) was founded in Mumbai in 2017 by Jaynti Kanani, Sandeep Nailwal, and Anurag Arjun to solve Ethereum's scalability bottleneck."),
+        ("AggLayer & Zero-Knowledge Evolution", "Polygon has invested over $1 billion in Zero-Knowledge (ZK) technology, creating Polygon zkEVM and the AggLayer to unify fragmented blockchain liquidity."),
+        ("Powering Global Brand Web3 Pilots", "Global giants including Starbucks, Nike, Reddit, and Disney selected Polygon for their digital loyalty and NFT collectibles initiatives.")
+    ],
+    "POL": [
+        ("Born in Mumbai, Scaling Worldwide", "Polygon (formerly Matic Network) was founded in Mumbai in 2017 by Jaynti Kanani, Sandeep Nailwal, and Anurag Arjun to solve Ethereum's scalability bottleneck."),
+        ("AggLayer & Zero-Knowledge Evolution", "Polygon has invested over $1 billion in Zero-Knowledge (ZK) technology, creating Polygon zkEVM and the AggLayer to unify fragmented blockchain liquidity."),
+        ("Powering Global Brand Web3 Pilots", "Global giants including Starbucks, Nike, Reddit, and Disney selected Polygon for their digital loyalty and NFT collectibles initiatives.")
+    ]
 }
 
 async def didyouknow_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -631,34 +757,49 @@ async def didyouknow_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
     reply_msg_id = update.effective_message.message_id if update.effective_message else None
 
     args = context.args or []
-    if not args:
-        await update.message.reply_text(
-            "<b>Usage:</b>\n/dyk &lt;coin name&gt; or /didyouknow &lt;coin name&gt;\n<i>ex /dyk btc</i>",
-            parse_mode=ParseMode.HTML,
-            reply_to_message_id=reply_msg_id
-        )
-        return
+    if args:
+        raw_sym = args[0]
+        resolved = resolve_coin(raw_sym)
+        symbol = resolved or raw_sym.upper()
+    else:
+        # Default to a random coin so /dyk works out of the box
+        symbol = random.choice(["BTC", "ETH", "SOL", "GRAM", "DOGE", "TON", "LINK", "XRP"])
 
-    raw_sym = args[0]
-    symbol = resolve_coin(raw_sym) or raw_sym.upper()
+    # Lookup handling: ensure TON and GRAM both resolve to available facts
+    lookup_sym = symbol.upper()
+    if lookup_sym in ("TON", "TONCOIN"):
+        lookup_sym = "TON" if "TON" in DID_YOU_KNOW_FACTS else "GRAM"
 
-    fact = DID_YOU_KNOW_FACTS.get(symbol.upper(), DID_YOU_KNOW_FACTS["BTC"])
-    title, body = fact
+    facts = DID_YOU_KNOW_FACTS.get(lookup_sym)
+    if not facts:
+        # Fallback to GRAM if TON-related, else BTC
+        if lookup_sym in ("TON", "GRAM", "THE-OPEN-NETWORK"):
+            facts = DID_YOU_KNOW_FACTS.get("GRAM", DID_YOU_KNOW_FACTS["BTC"])
+        else:
+            facts = DID_YOU_KNOW_FACTS.get("BTC")
+
+    # Anti-repetition selection per chat + coin
+    hist_key = abs(hash(f"{chat_id}_{lookup_sym}")) % 100000
+    idx = _get_next_index(hist_key, len(facts), _DYK_HISTORY)
+    title, body = facts[idx]
+
+    # For display symbol: respect what the user asked (e.g. TON vs GRAM)
+    display_sym = "TON" if (args and args[0].upper() in ("TON", "TONCOIN")) else symbol
 
     await context.bot.send_chat_action(chat_id=chat_id, action="upload_photo")
 
     try:
-        image_buf = render_didyouknow_card(symbol, title, body)
+        image_buf = render_didyouknow_card(display_sym, title, body)
         kb = InlineKeyboardMarkup([
-            [custom_btn("Another Trivia", callback_data="fun:satoshi", icon="help")],
-            [custom_btn(f"{symbol} Chart", callback_data=f"stats_{symbol}", coin=symbol)]
+            [custom_btn("Another Trivia", callback_data=f"fun:dyk:{display_sym}", icon="help")],
+            [custom_btn(f"{display_sym} Chart", callback_data=f"stats_{display_sym}", coin=display_sym)]
         ])
         await _send_fun_card(context, chat_id, image_buf, reply_msg_id, kb)
     except Exception as e:
         logger.error("Error in /didyouknow: %s", e)
         await context.bot.send_message(
             chat_id=chat_id,
-            text=f"{E('cross')} Failed to generate Trivia card for {symbol}.",
+            text=f"{E('cross')} Failed to generate Trivia card for {display_sym}.",
             parse_mode=ParseMode.HTML,
             reply_to_message_id=reply_msg_id
         )

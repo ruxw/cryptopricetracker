@@ -17,17 +17,19 @@ from bot.graphics.generator import (
 # ── Shared timestamp helper ────────────────────────────────────────────────────
 def _stamp_timestamp(draw: ImageDraw.ImageDraw, card_bbox: tuple, now_utc: Optional[datetime] = None) -> None:
     """
-    Stamp a compact live-rate timestamp at the bottom-right corner of a card.
-    Format: 'Live · 16 Nov 2026 · 12:34 UTC'
+    Stamp a compact live-rate timestamp safely inside the bottom-right of a card.
+    Format: 'as of 16 Nov 2026 · 12:34 UTC'
     """
     if now_utc is None:
         now_utc = datetime.utcnow()
-    ts_str = now_utc.strftime("asof· %d %b %Y · %H:%M UTC")
+    ts_str = now_utc.strftime("as of %d %b %Y · %H:%M UTC")
     cx0, cy0, cx1, cy1 = card_bbox
-    f_ts = get_font(11, weight="medium")
+    f_ts = get_font(12, weight="medium")
     tb = f_ts.getbbox(ts_str)
     tw = tb[2] - tb[0]
-    draw.text((cx1 - tw - 2, cy1 - 22), ts_str, fill=(90, 100, 125), font=f_ts)
+    th = tb[3] - tb[1]
+    # Inset generously (44px from right, 28px from bottom) to remain safely within rounded borders
+    draw.text((cx1 - tw - 44, cy1 - th - 28), ts_str, fill=(120, 130, 155), font=f_ts)
 
 def render_coin_stats(
     symbol: str,

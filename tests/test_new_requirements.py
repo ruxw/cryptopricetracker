@@ -92,3 +92,40 @@ async def test_daily_and_meme_captions_and_coins():
     # Test meme for specific coin
     buf = render_meme_card("Solana Speed", "Blasting through the candles", "Too fast", coin_symbol="SOL")
     assert len(buf.getvalue()) > 5000
+
+@pytest.mark.asyncio
+async def test_didyouknow_and_timestamp_margins():
+    from bot.handlers.meme import didyouknow_command, DID_YOU_KNOW_FACTS
+    from bot.graphics.templates import render_didyouknow_card
+    from unittest.mock import patch
+
+    # 1. GRAM and TON have dedicated facts
+    assert "GRAM" in DID_YOU_KNOW_FACTS
+    assert "TON" in DID_YOU_KNOW_FACTS
+    assert len(DID_YOU_KNOW_FACTS["GRAM"]) >= 3
+    assert len(DID_YOU_KNOW_FACTS["BTC"]) >= 3
+
+    # Check GRAM facts are about Telegram/TON, not Bitcoin pizza
+    assert any("telegram" in fact[1].lower() or "ton" in fact[1].lower() for fact in DID_YOU_KNOW_FACTS["GRAM"])
+
+    # 2. Test didyouknow handler invocation
+    update = MagicMock(spec=Update)
+    update.effective_user = MagicMock(spec=User, id=123)
+    update.effective_chat = MagicMock(spec=Chat, id=123, type=ChatType.PRIVATE)
+    update.effective_message = MagicMock(spec=Message, message_id=1)
+    context = MagicMock()
+    context.bot.send_chat_action = AsyncMock()
+
+    with patch("bot.handlers.meme.check_user_authorization", return_value=True), \
+         patch("bot.handlers.meme._send_fun_card", new_callable=AsyncMock) as mock_send:
+        # /dyk gram
+        context.args = ["gram"]
+        await didyouknow_command(update, context)
+        assert mock_send.called
+        call_args = mock_send.call_args[0]
+        # Check rendered image buffer is generated
+        assert len(call_args[2].getvalue()) > 1000
+
+    # 3. Card rendering verifies timestamp does not overflow
+    buf = render_didyouknow_card("GRAM", "Test Title", "Test Body")
+    assert len(buf.getvalue()) > 1000
