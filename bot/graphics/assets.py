@@ -88,6 +88,14 @@ COINS: Dict[str, Dict[str, Any]] = {
         "decimals": 2,
         "icon": os.path.join(ICONS_DIR, "gram.png")
     },
+    "TON": {
+        "id": "the-open-network",
+        "name": "Gram",
+        "symbol": "TON",
+        "color": "#0098ea",
+        "decimals": 2,
+        "icon": os.path.join(ICONS_DIR, "gram.png")
+    },
     "TRX": {
         "id": "tron",
         "name": "Tron",
@@ -127,6 +135,78 @@ COINS: Dict[str, Dict[str, Any]] = {
         "color": "#469f41",
         "decimals": 8,
         "icon": os.path.join(ICONS_DIR, "pepe.png")
+    },
+    "LINK": {
+        "id": "chainlink",
+        "name": "Chainlink",
+        "symbol": "LINK",
+        "color": "#375bd2",
+        "decimals": 2,
+        "icon": os.path.join(ICONS_DIR, "link.png")
+    },
+    "NEAR": {
+        "id": "near",
+        "name": "NEAR",
+        "symbol": "NEAR",
+        "color": "#00e599",
+        "decimals": 2,
+        "icon": os.path.join(ICONS_DIR, "near.png")
+    },
+    "SUI": {
+        "id": "sui",
+        "name": "Sui",
+        "symbol": "SUI",
+        "color": "#4da2ff",
+        "decimals": 2,
+        "icon": os.path.join(ICONS_DIR, "sui.png")
+    },
+    "APT": {
+        "id": "aptos",
+        "name": "Aptos",
+        "symbol": "APT",
+        "color": "#2ed8a7",
+        "decimals": 2,
+        "icon": os.path.join(ICONS_DIR, "apt.png")
+    },
+    "DOT": {
+        "id": "polkadot",
+        "name": "Polkadot",
+        "symbol": "DOT",
+        "color": "#e6007a",
+        "decimals": 2,
+        "icon": os.path.join(ICONS_DIR, "dot.png")
+    },
+    "ICP": {
+        "id": "internet-computer",
+        "name": "Internet Computer",
+        "symbol": "ICP",
+        "color": "#29abe2",
+        "decimals": 2,
+        "icon": os.path.join(ICONS_DIR, "icp.png")
+    },
+    "UNI": {
+        "id": "uniswap",
+        "name": "Uniswap",
+        "symbol": "UNI",
+        "color": "#ff007a",
+        "decimals": 2,
+        "icon": os.path.join(ICONS_DIR, "uni.png")
+    },
+    "BCH": {
+        "id": "bitcoin-cash",
+        "name": "Bitcoin Cash",
+        "symbol": "BCH",
+        "color": "#8dc351",
+        "decimals": 2,
+        "icon": os.path.join(ICONS_DIR, "bch.png")
+    },
+    "XLM": {
+        "id": "stellar",
+        "name": "Stellar",
+        "symbol": "XLM",
+        "color": "#14b6eb",
+        "decimals": 4,
+        "icon": os.path.join(ICONS_DIR, "xlm.png")
     }
 }
 

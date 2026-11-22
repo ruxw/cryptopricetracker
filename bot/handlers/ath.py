@@ -1,8 +1,10 @@
 import logging
 from datetime import datetime
 from telegram import Update, InlineKeyboardMarkup
-from telegram.constants import ParseMode
+from telegram.constants import ParseMode, ChatType
 from telegram.ext import ContextTypes
+
+from bot.config import BOT_USERNAME
 
 from bot.middlewares.auth import check_user_authorization
 from bot.services.crypto_api import crypto_service
@@ -13,6 +15,7 @@ from bot.graphics.templates import render_all_time_high
 from bot.graphics.assets import COINS
 from bot.emojis import E, coin_emoji, custom_btn
 from bot.database import save_cached_card_file_id
+from bot.handlers.crypto import make_crypto_card_keyboard
 
 logger = logging.getLogger(__name__)
 
@@ -65,9 +68,14 @@ async def ath_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             ttl=15.0
         )
 
-        kb = InlineKeyboardMarkup([
-            [custom_btn(f"Subscribe to {symbol} Daily Rates", callback_data=f"sub:{symbol}", coin=symbol)]
-        ])
+        user = update.effective_user
+        is_group = bool(update.effective_chat and update.effective_chat.type != ChatType.PRIVATE)
+        kb = await make_crypto_card_keyboard(
+            symbol,
+            user.id if user else None,
+            is_group=is_group,
+            bot_username=context.bot.username or BOT_USERNAME
+        )
         sp_caption, sp_markup = await attach_sponsored_content(reply_markup=kb)
 
         send_kwargs = {
@@ -124,9 +132,14 @@ async def ath_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             ttl=15.0
         )
 
-        kb = InlineKeyboardMarkup([
-            [custom_btn(f"Subscribe to {symbol} Daily Rates", callback_data=f"sub:{symbol}", coin=symbol)]
-        ])
+        user = update.effective_user
+        is_group = bool(update.effective_chat and update.effective_chat.type != ChatType.PRIVATE)
+        kb = await make_crypto_card_keyboard(
+            symbol,
+            user.id if user else None,
+            is_group=is_group,
+            bot_username=context.bot.username or BOT_USERNAME
+        )
         sp_caption, sp_markup = await attach_sponsored_content(reply_markup=kb)
 
         send_kwargs = {

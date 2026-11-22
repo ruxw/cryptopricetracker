@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 LOADING_TEXT = "Checking latest rates..."
 
 async def overview_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle /top or /overview command (Top 9 Cryptocurrencies)."""
+    """Handle /top or /overview command (Top Cryptocurrencies)."""
     if not await check_user_authorization(update, context):
         return
 

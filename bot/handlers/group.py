@@ -71,7 +71,7 @@ async def group_fallback_handler(update: Update, context: ContextTypes.DEFAULT_T
 
         # Send friendly interactive group guide
         kb = InlineKeyboardMarkup([
-            [InlineKeyboardButton("📊 Top 9 Overview", callback_data="nav_overview")],
+            [InlineKeyboardButton("📊 Top Cryptos", callback_data="nav_overview")],
             [InlineKeyboardButton("🔍 Guest Mode (Inline)", switch_inline_query_current_chat="")]
         ])
         help_msg = (
@@ -93,14 +93,14 @@ async def bot_added_to_group_handler(update: Update, context: ContextTypes.DEFAU
     welcome_text = (
         "👋 **Thank you for adding Currencing to the group!** ❤️\n\n"
         "I provide live cryptocurrency price tracking, interactive 7-day charts, "
-        "and market intelligence.\n\n"
-        "• Use `/overview` for the 3×3 live market grid\n"
+        "and real-time alerts.\n\n"
+        "• Use `/top` for the live crypto overview\n"
         "• Use `/stats BTC` for detailed coin charts\n"
         "• Use `/convert 0.3 LTC USD` to convert currencies\n"
         f"• Or use `@{bot_username}` for instant inline guest lookups!"
     )
     kb = InlineKeyboardMarkup([
-        [InlineKeyboardButton("📊 Market Overview", callback_data="nav_overview")],
+        [InlineKeyboardButton("📊 Top Cryptos", callback_data="nav_overview")],
         [InlineKeyboardButton("🔍 Try Inline Mode", switch_inline_query_current_chat="")]
     ])
     try:

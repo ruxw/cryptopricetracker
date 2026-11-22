@@ -4,7 +4,10 @@ from telegram.constants import ChatType, ParseMode
 from telegram.ext import ContextTypes
 
 from bot.config import BOT_USERNAME
-from bot.database import register_private_start, is_user_verified, record_interaction, toggle_subscription
+from bot.database import (
+    register_private_start, is_user_verified, record_interaction,
+    toggle_subscription, is_subscribed
+)
 from bot.middlewares.auth import get_verify_keyboard
 from bot.services.force_join import check_user_joined_all, get_force_join_keyboard, get_force_join_message
 from bot.emojis import E, coin_emoji, custom_btn
@@ -78,19 +81,37 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
         user_tag = f"@{user.username}" if user.username else user.first_name
         if len(args) > 0 and args[0].lower().startswith("sub_"):
-            sym = args[0][4:].upper()
-            now_subbed = await toggle_subscription(user.id, sym)
-            if now_subbed:
+            raw_sym = args[0][4:].upper()
+            sym = "GRAM" if raw_sym in ("TON", "GRAM") else raw_sym
+            sym_cmd = "gram" if sym == "GRAM" else sym.lower()
+
+            already_subbed = await is_subscribed(user.id, sym)
+            if not already_subbed:
+                await toggle_subscription(user.id, sym)
                 greeting = (
-                    f"{E('check')} <b>Subscribed to {sym} Daily Rates!</b>\n\n"
-                    f"You will receive daily rate updates and price changes for <b>{sym}</b> in this chat.\n\n"
-                    f"➡️ Type /top for the market overview or /help for all commands."
+                    f"{E('check')} <b>Subscribed to {sym} Daily Insights!</b>\n\n"
+                    f"You have subscribed for daily insights of <b>{sym}</b>. "
+                    f"You will receive daily rate cards and price insights directly in this chat.\n\n"
+                    f"<i>Whenever you want to unsubscribe, type /unsub {sym_cmd} or tap the unsub button on your daily card.</i>"
                 )
             else:
+                await toggle_subscription(user.id, sym)
                 greeting = (
-                    f"🔕 <b>Unsubscribed from {sym} daily updates.</b>\n\n"
-                    f"You can re-subscribe anytime with <code>/crypto {sym.lower()}</code>."
+                    f"🔕 <b>Unsubscribed from {sym} Daily Insights.</b>\n\n"
+                    f"Whenever you want to subscribe again for daily insights, just type <code>/sub {sym_cmd}</code> and all set!"
                 )
+        elif len(args) > 0 and args[0].lower().startswith("unsub_"):
+            raw_sym = args[0][6:].upper()
+            sym = "GRAM" if raw_sym in ("TON", "GRAM") else raw_sym
+            sym_cmd = "gram" if sym == "GRAM" else sym.lower()
+
+            already_subbed = await is_subscribed(user.id, sym)
+            if already_subbed:
+                await toggle_subscription(user.id, sym)
+            greeting = (
+                f"🔕 <b>Unsubscribed from {sym} Daily Insights.</b>\n\n"
+                f"Whenever you want to subscribe again for daily insights, just type <code>/sub {sym_cmd}</code> and all set!"
+            )
         elif is_deep_link_verify:
             greeting = (
                 f"{E('check')} <b>Verified, {user.first_name}!</b>\n\n"
@@ -127,7 +148,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         group_msg = (
             f"{E('gem')} <b>Currencing Active in Group</b>\n\n"
             f"Use commands directly:\n"
-            f"• /top — Top 9 crypto overview\n"
+            f"• /top — Top cryptos at a glance\n"
             f"• /btc, /eth, /sol, /bnb\n"
             f"• /convert 100 usd btc\n"
             f"• /daily — Daily crypto thought\n"
@@ -203,7 +224,7 @@ async def check_force_join_callback(update: Update, context: ContextTypes.DEFAUL
         await query.answer("✅ Verified! All required channels joined.", show_alert=True)
         text = (
             f"{E('check')} <b>Access Granted, {user.first_name}!</b>\n\n"
-            "All features are unlocked! Track live markets, 7-day charts, and AI conversions.\n\n"
+            "All features are unlocked! Track live markets, 7-day charts, and instant conversions.\n\n"
             "Type /top or /btc to get started!"
         )
         try:

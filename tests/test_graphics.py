@@ -44,7 +44,7 @@ def test_all_templates():
     ]
     buf_ov = render_market_overview(overview_sample)
     im_ov = Image.open(buf_ov)
-    assert im_ov.size == (1080, 660), f"Overview size mismatch: {im_ov.size}"
+    assert im_ov.size == (1024, 614), f"Overview size mismatch: {im_ov.size}"
     print("✓ Verified 3x3 Overview Grid template (1024x614)")
 
     # 3. Test ATH Template

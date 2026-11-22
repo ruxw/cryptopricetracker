@@ -33,6 +33,16 @@ COIN_ALIASES = {
     "shib": "SHIB", "shibainu": "SHIB", "shiba": "SHIB",
     # Pepe
     "pepe": "PEPE", "pepecoin": "PEPE",
+    # Additional Supported Coins with Icons
+    "link": "LINK", "chainlink": "LINK",
+    "near": "NEAR", "nearprotocol": "NEAR",
+    "sui": "SUI",
+    "apt": "APT", "aptos": "APT",
+    "dot": "DOT", "polkadot": "DOT",
+    "icp": "ICP", "internetcomputer": "ICP",
+    "uni": "UNI", "uniswap": "UNI",
+    "bch": "BCH", "bitcoincash": "BCH",
+    "xlm": "XLM", "stellar": "XLM", "lumens": "XLM",
 }
 
 

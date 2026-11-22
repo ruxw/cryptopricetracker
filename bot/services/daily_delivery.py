@@ -16,14 +16,17 @@ from telegram import Bot
 from telegram.constants import ParseMode
 from telegram.error import Forbidden, TelegramError
 
+from bot.config import BOT_USERNAME
 from bot.database import (
     get_eligible_daily_users, record_daily_delivery,
     get_all_subscriptions_by_user, get_user_subscriptions
 )
 from bot.services.crypto_api import crypto_service
-from bot.graphics.templates import render_daily_quote, render_meme_card
+from bot.services.cache_manager import get_cached_or_render
+from bot.graphics.templates import render_daily_quote, render_meme_card, render_coin_stats
 from bot.graphics.assets import format_price, format_change
 from bot.emojis import E, coin_emoji
+from bot.handlers.crypto import make_crypto_card_keyboard
 
 logger = logging.getLogger(__name__)
 
@@ -34,25 +37,24 @@ async def deliver_daily_to_user(bot: Bot, user_id: int, today_str: str) -> None:
     try:
         # Alternates or chooses between daily thought and funny meme
         choose_quote = (hash(f"{user_id}_{today_str}") % 2 == 0)
+        today_date = datetime.utcnow().strftime("%d/%m")
 
         if choose_quote:
-            quote, author, source = random.choice(DAILY_THOUGHTS)
+            quote_item = random.choice(DAILY_THOUGHTS)
+            quote, author, source = quote_item[0], quote_item[1], quote_item[2]
             image_buf = render_daily_quote(quote, author, source)
             caption = (
-                f"{E('currencing')} <b>Daily Crypto Intelligence</b> · <i>{today_str}</i>\n\n"
-                f"“{quote}”\n"
-                f"— <b>{author}</b>\n\n"
-                f"<i>Delivered daily by @CurrencingBot. Tap /daily or /top for more.</i>"
+                f"{E('currencing')} <b>Daily Thoughts · {today_date}</b>\n"
+                f"via @{BOT_USERNAME}. Tap /meme or /top for more."
             )
         else:
-            title, body, punchline = random.choice(MEME_VAULT)
-            image_buf = render_meme_card(title, body, punchline)
+            meme_item = random.choice(MEME_VAULT)
+            title, body, punchline = meme_item[0], meme_item[1], meme_item[2]
+            coin_sym = meme_item[3] if len(meme_item) > 3 else "DOGE"
+            image_buf = render_meme_card(title, body, punchline, coin_symbol=coin_sym)
             caption = (
-                f"{E('meme')} <b>Daily Crypto Degen Lore</b> · <i>{today_str}</i>\n\n"
-                f"<b>{title}</b>\n"
-                f"{body}\n\n"
-                f"👉 <b>{punchline}</b>\n\n"
-                f"<i>Delivered daily by @CurrencingBot. Tap /meme or /top for more.</i>"
+                f"{E('meme')} <b>Daily Degen Lore · {today_date}</b>\n"
+                f"via @{BOT_USERNAME}. Tap /meme or /top for more."
             )
 
         await bot.send_photo(
@@ -66,7 +68,6 @@ async def deliver_daily_to_user(bot: Bot, user_id: int, today_str: str) -> None:
 
     except Forbidden:
         logger.info("User %d blocked bot, marking inactive", user_id)
-        # Deactivate user
         try:
             import aiosqlite
             from bot.config import DB_PATH
@@ -79,38 +80,65 @@ async def deliver_daily_to_user(bot: Bot, user_id: int, today_str: str) -> None:
         logger.warning("Could not deliver daily card to user %d: %s", user_id, e)
 
 async def deliver_subscription_rates_to_user(bot: Bot, user_id: int, symbols: List[str], today_str: str) -> None:
-    """Deliver daily rate updates for user's subscribed currencies in DM."""
+    """Deliver daily rate updates for user's subscribed currencies in DM using visual cards."""
     if not symbols:
         return
 
+    date_str = datetime.utcnow().strftime("%d/%m")
+
     try:
-        lines = []
-        for sym in symbols:
+        sent_any = False
+        for raw_sym in symbols:
+            sym = raw_sym.upper()
+            if sym == "TON":
+                sym = "GRAM"
+
             try:
                 data = await crypto_service.get_coin_data(sym)
-                p_str = format_price(data["current_price"])
-                chg_str = format_change(data["change_24h"])
-                lines.append(f"• {coin_emoji(sym)} <b>{sym}:</b> ${p_str} USD ({chg_str})")
-            except Exception:
-                pass
+                price = data["current_price"]
+                p_str = format_price(price, decimals=2)
+                chg_24 = data["change_24h"]
+                chg_7 = data["change_7d"]
+                sparkline = data["sparkline"]
 
-        if not lines:
-            return
+                image_buf = await get_cached_or_render(
+                    render_coin_stats,
+                    sym,
+                    price,
+                    chg_24,
+                    chg_7,
+                    sparkline,
+                    ttl=15.0
+                )
 
-        msg = (
-            f"🔔 <b>Your Daily Subscribed Currency Rates</b> · <i>{today_str}</i>\n\n"
-            + "\n".join(lines) +
-            f"\n\n{E('currencing')} <i>Real-time intelligence from @CurrencingBot</i>\n"
-            f"<i>Use /crypto &lt;symbol&gt; to view interactive 7-day charts.</i>"
-        )
+                cmd_name = "gram" if sym in ("GRAM", "TON") else sym.lower()
+                caption = (
+                    f"{coin_emoji(sym)} <b>{sym}:</b> ${p_str} USD · {date_str}\n"
+                    f"Use /{cmd_name} for 7d Chart"
+                )
 
-        await bot.send_message(
-            chat_id=user_id,
-            text=msg,
-            parse_mode=ParseMode.HTML
-        )
-        await record_daily_delivery(user_id, today_str, "currency_rates")
-        logger.info("Delivered subscription rates to user %d for %s", user_id, symbols)
+                card_kb = await make_crypto_card_keyboard(
+                    sym,
+                    user_id=user_id,
+                    is_group=False,
+                    bot_username=BOT_USERNAME
+                )
+
+                await bot.send_photo(
+                    chat_id=user_id,
+                    photo=image_buf,
+                    caption=caption,
+                    parse_mode=ParseMode.HTML,
+                    reply_markup=card_kb
+                )
+                sent_any = True
+                await asyncio.sleep(0.1)
+            except Exception as e:
+                logger.warning("Could not render/deliver card for %s to user %d: %s", sym, user_id, e)
+
+        if sent_any:
+            await record_daily_delivery(user_id, today_str, "currency_rates")
+            logger.info("Delivered subscription rate cards to user %d for %s", user_id, symbols)
 
     except Forbidden:
         logger.info("User %d blocked bot, marking inactive", user_id)

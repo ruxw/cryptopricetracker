@@ -13,7 +13,6 @@ BINANCE_SYMBOLS = {
     "BTC": "BTCUSDT",
     "ETH": "ETHUSDT",
     "SOL": "SOLUSDT",
-    "GRAM": "TONUSDT",
     "LTC": "LTCUSDT",
     "XMR": "XMRUSDT",
     "XRP": "XRPUSDT",
@@ -23,7 +22,16 @@ BINANCE_SYMBOLS = {
     "ADA": "ADAUSDT",
     "AVAX": "AVAXUSDT",
     "SHIB": "SHIBUSDT",
-    "PEPE": "PEPEUSDT"
+    "PEPE": "PEPEUSDT",
+    "LINK": "LINKUSDT",
+    "NEAR": "NEARUSDT",
+    "SUI": "SUIUSDT",
+    "APT": "APTUSDT",
+    "DOT": "DOTUSDT",
+    "ICP": "ICPUSDT",
+    "UNI": "UNIUSDT",
+    "BCH": "BCHUSDT",
+    "XLM": "XLMUSDT",
 }
 
 PAPRIKA_IDS = {
@@ -108,9 +116,15 @@ INITIAL_FALLBACK = {
     },
     "GRAM": {
         "id": "the-open-network", "symbol": "GRAM", "name": "Gram",
-        "current_price": 1.05, "change_24h": -1.10, "change_7d": -12.18,
+        "current_price": 0.94, "change_24h": 4.54, "change_7d": -10.06,
         "ath": 8.25, "ath_date": "2024-06-15T00:00:00.000Z",
-        "sparkline": generate_synthetic_sparkline(1.05, -12.18)
+        "sparkline": generate_synthetic_sparkline(0.94, -10.06)
+    },
+    "TON": {
+        "id": "the-open-network", "symbol": "TON", "name": "Gram",
+        "current_price": 0.94, "change_24h": 4.54, "change_7d": -10.06,
+        "ath": 8.25, "ath_date": "2024-06-15T00:00:00.000Z",
+        "sparkline": generate_synthetic_sparkline(0.94, -10.06)
     },
     "LTC": {
         "id": "litecoin", "symbol": "LTC", "name": "Litecoin",
@@ -305,6 +319,37 @@ class CryptoApiService:
             except Exception as e:
                 logger.debug("Tier 2 (Paprika) enrichment failed: %s", e)
 
+            # Always fetch authentic Toncoin (The Open Network / Gram) from CoinGecko
+            try:
+                cg_ton_url = f"{COINGECKO_API_BASE}/coins/markets?vs_currency=usd&ids=the-open-network&sparkline=true&price_change_percentage=24h,7d"
+                async with session.get(cg_ton_url, timeout=aiohttp.ClientTimeout(total=4)) as t_resp:
+                    if t_resp.status == 200:
+                        t_data = await t_resp.json()
+                        if t_data and len(t_data) > 0:
+                            item = t_data[0]
+                            curr_p = float(item.get("current_price") or 0.0)
+                            if curr_p > 0:
+                                chg_24 = float(item.get("price_change_percentage_24h_in_currency") or 0.0)
+                                chg_7 = float(item.get("price_change_percentage_7d_in_currency") or 0.0)
+                                ath_v = float(item.get("ath") or 8.25)
+                                spark = item.get("sparkline_in_7d", {}).get("price", [])
+                                if not spark or (max(spark) - min(spark) < 0.0001):
+                                    spark = generate_synthetic_sparkline(curr_p, chg_7)
+                                for sym_key in ("GRAM", "TON"):
+                                    self._cache[sym_key] = {
+                                        "id": "the-open-network",
+                                        "symbol": sym_key,
+                                        "name": "Gram",
+                                        "current_price": curr_p,
+                                        "change_24h": chg_24,
+                                        "change_7d": chg_7,
+                                        "ath": ath_v,
+                                        "ath_date": item.get("ath_date") or "",
+                                        "sparkline": spark
+                                    }
+            except Exception as e:
+                logger.debug("Dedicated Toncoin / Gram fetch failed: %s", e)
+
             # Tier 3 Fallback: CoinGecko only if Binance didn't succeed
             if not tier1_success:
                 try:
@@ -406,7 +451,10 @@ class CryptoApiService:
         """Get live or cached market data for an individual coin."""
         symbol = symbol.upper()
         await self.refresh_market_data()
-        coin = self._cache.get(symbol)
+        if symbol in ("TON", "GRAM"):
+            coin = self._cache.get("GRAM") or self._cache.get("TON")
+        else:
+            coin = self._cache.get(symbol)
         if not coin:
             fallback = INITIAL_FALLBACK.get(symbol)
             if fallback:

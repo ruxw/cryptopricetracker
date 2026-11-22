@@ -22,9 +22,9 @@ def _stamp_timestamp(draw: ImageDraw.ImageDraw, card_bbox: tuple, now_utc: Optio
     """
     if now_utc is None:
         now_utc = datetime.utcnow()
-    ts_str = now_utc.strftime("Live · %d %b %Y · %H:%M UTC")
+    ts_str = now_utc.strftime("asof· %d %b %Y · %H:%M UTC")
     cx0, cy0, cx1, cy1 = card_bbox
-    f_ts = get_font(13, weight="medium")
+    f_ts = get_font(11, weight="medium")
     tb = f_ts.getbbox(ts_str)
     tw = tb[2] - tb[0]
     draw.text((cx1 - tw - 2, cy1 - 22), ts_str, fill=(90, 100, 125), font=f_ts)
@@ -199,51 +199,29 @@ def render_coin_stats(
     return buf
 
 def render_market_overview(coins_data: List[Dict[str, Any]]) -> io.BytesIO:
-    """Template 2: 3x3 Multi-Coin Market Overview — glassmorphism tiles, gradient backdrop, timestamp."""
+    """Template 2: 3x3 Multi-Coin Market Overview — aesthetic obsidian tiles matching reference image."""
     import numpy as np
-    width, height = 1080, 660
+    width, height = 1024, 614
 
-    # ── Rich radial multi-stop gradient backdrop ───────────────────────────────
-    # Deep space: dark navy at edges → vibrant electric blue-purple at center-top
-    Y, X = np.ogrid[:height, :width]
-    # Primary glow: electric indigo from top-left
-    d1 = np.sqrt(((X - width * 0.25) / width) ** 2 + ((Y - height * 0.1) / height) ** 2)
-    d1 = np.clip(d1 / 0.9, 0, 1)
-    c_light1 = np.array([26, 20, 68], dtype=float)   # deep indigo
-    c_dark1  = np.array([6, 7, 12],   dtype=float)   # near black
-    grad1 = (c_light1 * (1 - d1[:, :, None]) + c_dark1 * d1[:, :, None]).astype(np.uint8)
-
-    # Secondary glow: teal accent from bottom-right corner
-    d2 = np.sqrt(((X - width * 0.82) / width) ** 2 + ((Y - height * 0.88) / height) ** 2)
-    d2 = np.clip(d2 / 0.75, 0, 1)
-    c_light2 = np.array([10, 48, 60], dtype=float)   # dark teal
-    c_dark2  = np.array([4, 5, 10],   dtype=float)
-    grad2 = (c_light2 * (1 - d2[:, :, None]) + c_dark2 * d2[:, :, None]).astype(np.uint8)
-
-    # Blend the two gradients with screen-like additive mix capped at 255
-    blended = np.clip(grad1.astype(int) + grad2.astype(int), 0, 255).astype(np.uint8)
-    bg = Image.fromarray(blended, "RGB").convert("RGBA")
-
-    # ── Subtle diagonal scanline texture overlay ───────────────────────────────
-    scan_layer = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-    sc_draw = ImageDraw.Draw(scan_layer)
-    for y in range(0, height, 4):
-        sc_draw.line([(0, y), (width, y)], fill=(255, 255, 255, 5), width=1)
-    bg = Image.alpha_composite(bg, scan_layer)
-
-    # ── Grid specs: 3×3, tiles a bit taller for timestamp ─────────────────────
-    tile_w, tile_h = 316, 162
-    gap_x, gap_y = 20, 18
+    tile_w, tile_h = 296, 166
+    gap_x, gap_y = 26, 22
     start_x = (width - 3 * tile_w - 2 * gap_x) // 2
-    start_y = 44
+    start_y = (height - 3 * tile_h - 2 * gap_y) // 2
 
-    font_name  = get_font(20, weight="bold")
-    font_price = get_font(31, weight="extrabold")
-    font_chg   = get_font(19, weight="bold")
-    font_ts    = get_font(11, weight="medium")
+    # Deep space obsidian background with subtle radial vignette
+    Y, X = np.ogrid[:height, :width]
+    dist = np.sqrt(((X - width * 0.5) / (width * 0.5))**2 + ((Y - height * 0.5) / (height * 0.5))**2)
+    dist = np.clip(dist, 0, 1.4) / 1.4
+    center_c = np.array([22, 24, 30], dtype=float)
+    edge_c = np.array([4, 5, 7], dtype=float)
+    vignette = (center_c[None, None, :] * (1 - dist[:, :, None]) + edge_c[None, None, :] * dist[:, :, None]).astype(np.uint8)
+    bg = Image.fromarray(vignette, "RGB").convert("RGBA")
+
+    font_name = get_font(21, weight="bold")
+    font_price = get_font(33, weight="extrabold")
+    font_chg = get_font(20, weight="bold")
 
     display_coins = coins_data[:9]
-    now_utc = datetime.utcnow()
 
     for idx, item in enumerate(display_coins):
         row = idx // 3
@@ -254,6 +232,8 @@ def render_market_overview(coins_data: List[Dict[str, Any]]) -> io.BytesIO:
         ty1 = ty0 + tile_h
 
         sym = item.get("symbol", "").upper()
+        if sym == "TON":
+            sym = "GRAM"
         meta = COINS.get(sym, {
             "name": item.get("name", sym),
             "symbol": sym,
@@ -262,111 +242,123 @@ def render_market_overview(coins_data: List[Dict[str, Any]]) -> io.BytesIO:
             "icon": None
         })
         acc_hex = meta.get("color", "#f7931a")
+        # Match radiant coin hues from reference
+        if sym == "ETH":
+            acc_hex = "#6c82ec"
+        elif sym == "SOL":
+            acc_hex = "#1fd1a5"
+        elif sym in ("GRAM", "TON"):
+            acc_hex = "#00a3ff"
+        elif sym == "LTC":
+            acc_hex = "#4d7bc4"
+        elif sym == "XMR":
+            acc_hex = "#ff6b22"
+        elif sym == "XRP":
+            acc_hex = "#707b8b"
+        elif sym == "BNB":
+            acc_hex = "#f5b82e"
+        elif sym == "TRX":
+            acc_hex = "#eb2f38"
+        elif sym == "BTC":
+            acc_hex = "#f7931a"
+
         acc_rgb = hex_to_rgb(acc_hex)
         icon_path = meta.get("icon")
 
-        # ── 1. Per-coin ambient bloom ──────────────────────────────────────────
+        # 1. Soft ambient bloom behind card
         bloom = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-        bl_draw = ImageDraw.Draw(bloom)
-        bl_draw.rounded_rectangle(
-            (tx0 - 6, ty0 - 6, tx1 + 6, ty1 + 6),
-            radius=28, fill=acc_rgb + (45,)
-        )
-        bloom = bloom.filter(ImageFilter.GaussianBlur(14))
+        b_draw = ImageDraw.Draw(bloom)
+        b_draw.rounded_rectangle((tx0 - 4, ty0 - 4, tx1 + 4, ty1 + 4), radius=28, fill=acc_rgb + (35,))
+        bloom = bloom.filter(ImageFilter.GaussianBlur(16))
         bg = Image.alpha_composite(bg, bloom)
 
-        # ── 2. Glassmorphism card body ─────────────────────────────────────────
-        # Frosted blur under card
-        card_blur = bg.filter(ImageFilter.GaussianBlur(18))
-        blur_mask = Image.new("L", (width, height), 0)
-        bm_draw = ImageDraw.Draw(blur_mask)
-        bm_draw.rounded_rectangle((tx0, ty0, tx1, ty1), radius=22, fill=255)
-        bg = Image.composite(card_blur, bg, blur_mask)
+        # 2. Card tile surface with subtle colored gradient
+        tile_mask = Image.new("L", (tile_w, tile_h), 0)
+        tm_draw = ImageDraw.Draw(tile_mask)
+        tm_draw.rounded_rectangle((0, 0, tile_w, tile_h), radius=26, fill=255)
 
-        # Dark translucent card surface
-        card_layer = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-        cd_draw = ImageDraw.Draw(card_layer)
-        cd_draw.rounded_rectangle(
-            (tx0, ty0, tx1, ty1),
-            radius=22,
-            fill=(14, 16, 22, 210),
-            outline=acc_rgb + (170,),
-            width=1
-        )
-        bg = Image.alpha_composite(bg, card_layer)
+        tY, tX = np.ogrid[:tile_h, :tile_w]
+        t_dist = (tY / float(tile_h))
+        top_tint = np.array([min(255, int(15 + acc_rgb[0] * 0.18)), min(255, int(16 + acc_rgb[1] * 0.18)), min(255, int(22 + acc_rgb[2] * 0.18))], dtype=float)
+        bot_tint = np.array([10, 11, 15], dtype=float)
+        tile_arr = np.zeros((tile_h, tile_w, 3), dtype=np.uint8)
+        for c_i in range(3):
+            tile_arr[:, :, c_i] = (top_tint[c_i] * (1 - t_dist[:, 0, None]) + bot_tint[c_i] * t_dist[:, 0, None]).astype(np.uint8)
+        tile_img = Image.fromarray(tile_arr, "RGB").convert("RGBA")
 
-        # Specular highlight (top edge sheen)
-        sheen_layer = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-        sh_draw = ImageDraw.Draw(sheen_layer)
-        sh_draw.rounded_rectangle(
-            (tx0 + 1, ty0 + 1, tx1 - 1, ty0 + 28),
-            radius=22,
-            fill=(255, 255, 255, 18)
-        )
-        bg = Image.alpha_composite(bg, sheen_layer)
-
-        # ── 3. Coin icon watermark (large, centered, low opacity) ──────────────
+        # Watermark tiling inside the tile
         if icon_path and os.path.exists(icon_path):
             try:
-                wm_img = Image.open(icon_path).convert("RGBA").resize((86, 86), Image.Resampling.LANCZOS)
-                _, _, _, a = wm_img.split()
-                a_mask = a.point(lambda p: int(p * 0.08))
-                wm_ghost = Image.composite(wm_img, Image.new("RGBA", (86, 86), (0, 0, 0, 0)), a_mask)
-                bg.alpha_composite(wm_ghost, (tx0 + (tile_w - 86) // 2, ty0 + (tile_h - 86) // 2))
+                wm = Image.open(icon_path).convert("RGBA")
+                wm_s = 34
+                wm = wm.resize((wm_s, wm_s), Image.Resampling.LANCZOS)
+                _, _, _, w_a = wm.split()
+                w_mask = w_a.point(lambda p: int(p * 0.08))
+                ghost = Image.composite(wm, Image.new("RGBA", (wm_s, wm_s), (0, 0, 0, 0)), w_mask)
+                sx, sy = 62, 52
+                for r_idx, y in enumerate(range(-10, tile_h + 30, sy)):
+                    x_off = (sx // 2) if (r_idx % 2 == 1) else 0
+                    for x in range(-10 + x_off, tile_w + 30, sx):
+                        tile_img.alpha_composite(ghost, (x, y))
             except Exception:
                 pass
 
-        # ── 4. Top row: coin icon (32px) + name ───────────────────────────────
-        icon_size = 32
-        coin_name = meta["name"]
-        nb = font_name.getbbox(coin_name)
+        # Card border
+        t_draw = ImageDraw.Draw(tile_img)
+        t_draw.rounded_rectangle((0, 0, tile_w - 1, tile_h - 1), radius=26, outline=acc_rgb + (140,), width=1)
+
+        # Apply tile mask to alpha channel
+        tile_img.putalpha(tile_mask)
+        bg.alpha_composite(tile_img, (tx0, ty0))
+
+        # 3. Content
+        c_draw = ImageDraw.Draw(bg)
+
+        # Top row: icon (26px) + name
+        icon_s = 26
+        c_name = meta["name"]
+        nb = font_name.getbbox(c_name)
         nw = nb[2] - nb[0]
+
         has_icon = bool(icon_path and os.path.exists(icon_path))
-        total_top_w = (icon_size + 8 + nw) if has_icon else nw
-        top_start_x = tx0 + (tile_w - total_top_w) // 2
+        top_w = (icon_s + 8 + nw) if has_icon else nw
+        top_x = tx0 + (tile_w - top_w) // 2
+        top_y = ty0 + 18
 
         if has_icon:
             try:
-                c_icon = Image.open(icon_path).convert("RGBA").resize((icon_size, icon_size), Image.Resampling.LANCZOS)
-                bg.alpha_composite(c_icon, (top_start_x, ty0 + 14))
+                ico = Image.open(icon_path).convert("RGBA").resize((icon_s, icon_s), Image.Resampling.LANCZOS)
+                bg.alpha_composite(ico, (top_x, top_y))
             except Exception:
                 pass
-            text_x = top_start_x + icon_size + 8
+            name_x = top_x + icon_s + 8
         else:
-            text_x = top_start_x
+            name_x = top_x
+        c_draw.text((name_x, top_y + 1), c_name, fill=(255, 255, 255), font=font_name)
 
-        draw = ImageDraw.Draw(bg)
-        draw.text((text_x, ty0 + 16), coin_name, fill=(255, 255, 255), font=font_name)
-
-        # ── 5. Price row: accent '$' + white price ─────────────────────────────
+        # Middle row: Price
         p_val = item.get("price", 0.0)
-        p_str = format_price(p_val, decimals=meta.get("decimals", 2))
+        dec = meta.get("decimals", 2)
+        p_str = format_price(p_val, decimals=dec)
         sb = font_price.getbbox("$")
         sw = sb[2] - sb[0]
         pb = font_price.getbbox(p_str)
         pw = pb[2] - pb[0]
-        total_p_w = sw + 4 + pw
-        px = tx0 + (tile_w - total_p_w) // 2
-        py = ty0 + 56
-        draw.text((px, py), "$", fill=acc_rgb, font=font_price)
-        draw.text((px + sw + 4, py), p_str, fill=(255, 255, 255), font=font_price)
+        tot_pw = sw + 5 + pw
+        px = tx0 + (tile_w - tot_pw) // 2
+        py = ty0 + 58
+        c_draw.text((px, py), "$", fill=acc_rgb, font=font_price)
+        c_draw.text((px + sw + 5, py), p_str, fill=(255, 255, 255), font=font_price)
 
-        # ── 6. 24h change ─────────────────────────────────────────────────────
+        # Bottom row: Change %
         chg = item.get("change_24h", 0.0)
-        chg_col = COLORS["green"] if chg >= 0 else COLORS["red"]
+        chg_col = (0, 230, 118) if chg >= 0 else (255, 65, 65)
         chg_str = format_change(chg)
         cb = font_chg.getbbox(chg_str)
         cw = cb[2] - cb[0]
-        draw.text((tx0 + (tile_w - cw) // 2, ty0 + 104), chg_str, fill=chg_col, font=font_chg)
-
-        # ── 7. Timestamp bottom-right of each tile ─────────────────────────────
-        ts_str = now_utc.strftime("%d %b · %H:%M UTC")
-        tsb = font_ts.getbbox(ts_str)
-        tsw = tsb[2] - tsb[0]
-        draw.text((tx1 - tsw - 10, ty1 - 17), ts_str, fill=(90, 100, 125), font=font_ts)
-
-    # ── Bottom branded footer pill ─────────────────────────────────────────────
-    draw_footer(bg, y_pos=636)
+        cx = tx0 + (tile_w - cw) // 2
+        cy = ty0 + 110
+        c_draw.text((cx, cy), chg_str, fill=chg_col, font=font_chg)
 
     buf = io.BytesIO()
     bg.convert("RGB").save(buf, format="PNG", quality=96)
@@ -1099,11 +1091,14 @@ def render_chatvibe_card(chat_title: str, top_coins: List[Dict[str, Any]]) -> io
     buf.seek(0)
     return buf
 
-def render_daily_quote(quote: str, author: str, source: str = "Daily Crypto Intelligence") -> io.BytesIO:
+def render_daily_quote(quote: str, author: str, source: str = "Daily Crypto Intelligence", coin_symbol: Optional[str] = "BTC") -> io.BytesIO:
     """Render /daily card matching reference floating card layout."""
-    icon_path = COINS.get("BTC", {}).get("icon")
-    img = get_themed_background(1024, 640, accent_hex="#8b5cf6", icon_path=icon_path)
-    img, card_bbox = draw_card_frame(img, coin_symbol="BTC")
+    sym = (coin_symbol or "BTC").upper()
+    meta = COINS.get(sym, COINS.get("BTC", {}))
+    accent_hex = meta.get("color", "#8b5cf6")
+    icon_path = meta.get("icon")
+    img = get_themed_background(1024, 640, accent_hex=accent_hex, icon_path=icon_path)
+    img, card_bbox = draw_card_frame(img, coin_symbol=sym)
     cx0, cy0, cx1, cy1 = card_bbox
 
     draw = ImageDraw.Draw(img)
@@ -1145,11 +1140,14 @@ def render_daily_quote(quote: str, author: str, source: str = "Daily Crypto Inte
     buf.seek(0)
     return buf
 
-def render_meme_card(title: str, text: str, punchline: str = "") -> io.BytesIO:
-    """Render /meme card matching reference floating card layout."""
-    icon_path = COINS.get("DOGE", {}).get("icon") or COINS.get("PEPE", {}).get("icon")
-    img = get_themed_background(1024, 640, accent_hex="#10b981", icon_path=icon_path)
-    img, card_bbox = draw_card_frame(img, coin_symbol="DOGE")
+def render_meme_card(title: str, text: str, punchline: str = "", coin_symbol: Optional[str] = None) -> io.BytesIO:
+    """Render /meme card matching reference floating card layout with dynamic coin theme."""
+    sym = (coin_symbol or "DOGE").upper()
+    meta = COINS.get(sym, COINS.get("DOGE", {}))
+    accent_hex = meta.get("color", "#10b981")
+    icon_path = meta.get("icon")
+    img = get_themed_background(1024, 640, accent_hex=accent_hex, icon_path=icon_path)
+    img, card_bbox = draw_card_frame(img, coin_symbol=sym)
     cx0, cy0, cx1, cy1 = card_bbox
 
     draw = ImageDraw.Draw(img)

@@ -6,13 +6,13 @@ Provides:
   /btc, /eth, /sol, /ton,
   /ltc, /xmr, /xrp, /bnb,
   /trx                       — instant per-coin shortcuts
-  /top                       — Top 9 crypto overview
+  /top                       — Top crypto overview
 """
 
 import logging
 from typing import Optional
 from telegram import Update, InlineKeyboardMarkup
-from telegram.constants import ParseMode
+from telegram.constants import ParseMode, ChatType
 from telegram.ext import ContextTypes
 
 from bot.config import BOT_USERNAME
@@ -41,12 +41,30 @@ _USAGE = (
     "<i>ex /crypto btc</i>"
 )
 
-async def make_crypto_card_keyboard(symbol: str, user_id: Optional[int] = None) -> InlineKeyboardMarkup:
+async def make_crypto_card_keyboard(
+    symbol: str,
+    user_id: Optional[int] = None,
+    is_group: bool = False,
+    bot_username: Optional[str] = None
+) -> InlineKeyboardMarkup:
     """
     Build action keyboard below every generated crypto card:
-    Only daily subscription button (+ sponsored button if enabled).
+    - In group chats: provides deep-link URL button routing ANY member directly to the bot.
+    - In private DM: toggle callback button showing current subscription status.
     """
     sym = symbol.upper()
+    if sym == "TON":
+        sym = "GRAM"
+    b_user = bot_username or BOT_USERNAME
+
+    if is_group:
+        btn = custom_btn(
+            f"Daily Rates · Tap to Sub/Unsub",
+            url=f"https://t.me/{b_user}?start=sub_{sym}",
+            coin=sym
+        )
+        return InlineKeyboardMarkup([[btn]])
+
     subbed = False
     if user_id:
         try:
@@ -78,32 +96,42 @@ async def subscribe_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
         return
 
     symbol = parts[1].upper()
+    if symbol == "TON":
+        symbol = "GRAM"
 
-    # Check if user has started the bot in DM
-    verified = await is_user_verified(user.id)
-    if not verified:
-        bot_username = context.bot.username or BOT_USERNAME
-        await query.answer(
-            "⚠️ Please start me in private first so I can send your daily updates to your DM!",
-            show_alert=True
-        )
+    bot_username = context.bot.username or BOT_USERNAME
+
+    # In group chats, immediately route the user to bot DM with deep link
+    if update.effective_chat and update.effective_chat.type != ChatType.PRIVATE:
+        await query.answer(url=f"https://t.me/{bot_username}?start=sub_{symbol}")
         return
 
+    # In private DM with the bot:
+    await query.answer()
     now_subbed = await toggle_subscription(user.id, symbol)
     if now_subbed:
-        await query.answer(
-            f"✅ Subscribed to {symbol} daily rates!\nYou will receive daily rate updates in your DM.",
-            show_alert=True
+        await context.bot.send_message(
+            chat_id=user.id,
+            text=(
+                f"{E('check')} <b>Subscribed to {symbol} Daily Insights!</b>\n\n"
+                f"You have subscribed for daily insights of <b>{symbol}</b>. "
+                f"You will receive daily rate cards directly in this chat."
+            ),
+            parse_mode=ParseMode.HTML
         )
     else:
-        await query.answer(
-            f"🔕 Unsubscribed from {symbol} daily updates.",
-            show_alert=True
+        await context.bot.send_message(
+            chat_id=user.id,
+            text=(
+                f"🔕 <b>Unsubscribed from {symbol} Daily Insights.</b>\n\n"
+                f"Whenever you want to subscribe again for daily insights, just type <code>/sub {symbol.lower()}</code> and all set!"
+            ),
+            parse_mode=ParseMode.HTML
         )
 
-    # Update keyboard on message if possible
+    # Update keyboard on message in DM
     try:
-        new_kb = await make_crypto_card_keyboard(symbol, user.id)
+        new_kb = await make_crypto_card_keyboard(symbol, user.id, is_group=False, bot_username=bot_username)
         _, sp_markup = await attach_sponsored_content(reply_markup=new_kb)
         await query.message.edit_reply_markup(reply_markup=sp_markup)
     except Exception:
@@ -143,7 +171,13 @@ async def _send_coin_stats(update: Update, context: ContextTypes.DEFAULT_TYPE, s
             ttl=15.0
         )
 
-        card_kb = await make_crypto_card_keyboard(symbol, user_id)
+        is_group = bool(update.effective_chat and update.effective_chat.type != ChatType.PRIVATE)
+        card_kb = await make_crypto_card_keyboard(
+            symbol,
+            user_id,
+            is_group=is_group,
+            bot_username=context.bot.username or BOT_USERNAME
+        )
         sp_caption, sp_markup = await attach_sponsored_content(reply_markup=card_kb)
 
         send_kwargs = {
@@ -209,5 +243,72 @@ async def coin_shortcut(update: Update, context: ContextTypes.DEFAULT_TYPE, symb
     await _send_coin_stats(update, context, symbol)
 
 async def top_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """/top — Top 9 crypto market overview."""
+    """/top — Top crypto market overview."""
     await overview_command(update, context)
+
+async def sub_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """/sub <currency> — Subscribe to daily insights for a coin."""
+    if not await check_user_authorization(update, context):
+        return
+
+    user = update.effective_user
+    args = context.args or []
+    reply_msg_id = update.effective_message.message_id if update.effective_message else None
+
+    if not args:
+        await update.message.reply_text(
+            "<b>Usage:</b>\n/sub &lt;currency&gt;\n<i>ex: /sub btc</i>\n\nTo unsubscribe: <code>/unsub &lt;currency&gt;</code>",
+            parse_mode=ParseMode.HTML,
+            reply_to_message_id=reply_msg_id
+        )
+        return
+
+    raw = args[0]
+    sym = resolve_coin(raw) or raw.strip().upper()
+    if sym == "TON":
+        sym = "GRAM"
+
+    already_subbed = await is_subscribed(user.id, sym)
+    if not already_subbed:
+        await toggle_subscription(user.id, sym)
+
+    await update.message.reply_text(
+        f"{E('check')} <b>Subscribed to {sym} Daily Insights!</b>\n\n"
+        f"You have subscribed for daily insights of <b>{sym}</b>. You will receive daily rate cards and market updates directly in your DM.\n\n"
+        f"<i>To check live rates anytime: /crypto {sym.lower()}</i>",
+        parse_mode=ParseMode.HTML,
+        reply_to_message_id=reply_msg_id
+    )
+
+async def unsub_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """/unsub <currency> — Unsubscribe from daily insights for a coin."""
+    if not await check_user_authorization(update, context):
+        return
+
+    user = update.effective_user
+    args = context.args or []
+    reply_msg_id = update.effective_message.message_id if update.effective_message else None
+
+    if not args:
+        await update.message.reply_text(
+            "<b>Usage:</b>\n/unsub &lt;currency&gt;\n<i>ex: /unsub btc</i>",
+            parse_mode=ParseMode.HTML,
+            reply_to_message_id=reply_msg_id
+        )
+        return
+
+    raw = args[0]
+    sym = resolve_coin(raw) or raw.strip().upper()
+    if sym == "TON":
+        sym = "GRAM"
+
+    already_subbed = await is_subscribed(user.id, sym)
+    if already_subbed:
+        await toggle_subscription(user.id, sym)
+
+    await update.message.reply_text(
+        f"🔕 <b>Unsubscribed from {sym} Daily Insights.</b>\n\n"
+        f"Whenever you want to subscribe again for daily insights, just type <code>/sub {sym.lower()}</code> and all set!",
+        parse_mode=ParseMode.HTML,
+        reply_to_message_id=reply_msg_id
+    )

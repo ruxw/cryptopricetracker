@@ -26,6 +26,8 @@ from telegram import Update, InlineKeyboardMarkup
 from telegram.constants import ParseMode, ChatType
 from telegram.ext import ContextTypes
 
+from bot.config import BOT_USERNAME
+
 from bot.middlewares.auth import check_user_authorization
 from bot.services.crypto_api import crypto_service
 from bot.services.resolver import resolve_coin
@@ -120,7 +122,26 @@ DAILY_THOUGHTS = [
     ("Generational wealth is made during the quiet accumulation phases when tourists have left and builders remain.", "Crypto Founder Maxim", "Builder Sentiment"),
     ("A wallet address is an open doorway to the global financial system. No permission slip, ID photo, or credit score required.", "Open Finance Ethos", "Inclusion"),
     ("The ledger does not lie. Proof of work bridges digital abstractions with thermodynamics and physics.", "Satoshi Nakamoto", "Proof of Work"),
-    ("Hold onto sound money, continue learning every day, and never let short-term market noise cloud long-term vision.", "Currencing Daily Intelligence", "Daily Motivation")
+    ("Hold onto sound money, continue learning every day, and never let short-term market noise cloud long-term vision.", "Currencing Daily Intelligence", "Daily Motivation"),
+    ("Bitcoin is Venice in the 14th century, the printing press in the 15th, and the Internet in the 20th.", "Nic Carter, Castle Island Ventures", "Economic Evolution"),
+    ("The Open Network is bringing decentralized freedom to over 900 million Telegram users worldwide.", "Pavel Durov, Telegram & TON Visionary", "Telegram Ecosystem"),
+    ("You don't change Bitcoin. Bitcoin changes you.", "Michael Saylor, Executive Chairman MicroStrategy", "Bitcoin Mindset"),
+    ("Smart contracts are unstoppable code. Once deployed, they answer to nobody except the laws of mathematics.", "Vitalik Buterin, Co-founder of Ethereum", "World Computer"),
+    ("In a financial system built on debt and inflation, holding an unprintable asset is the ultimate act of rebellion.", "Lyn Alden, Macro Economist & Author", "Broken Money"),
+    ("Monero proves that privacy is not about having something to hide, but about having boundaries that belong to you.", "Cypherpunk Principle", "Privacy & Sovereignty"),
+    ("Solana took the blockchain throughput from a dial-up modem directly into fiber-optic light speeds.", "Anatoly Yakovenko, Co-founder of Solana", "High-Performance Chains"),
+    ("When the world realizes that fiat currency is melting ice, they will run towards digital scarcity.", "Dan Morehead, Founder Pantera Capital", "Macro Allocations"),
+    ("The hardest money ever conceived by human civilization is Bitcoin.", "Saifedean Ammous", "Austrian Economics"),
+    ("Ethereum is creating an entire decentralized economy with zero central banks, zero boardrooms, and pure open liquidity.", "Camila Russo", "DeFi Revolution"),
+    ("If you hold your own keys, you are your own central bank, vault, and auditor combined.", "Andreas Antonopoulos", "Sovereign Banking"),
+    ("Financial censorship ends where peer-to-peer cryptography begins.", "Open Source Crypto Ethos", "Digital Liberty"),
+    ("Every halving reminds the world that human greed cannot alter Bitcoin's mathematical clock.", "Crypto Philosophy", "The Halving Principle"),
+    ("Decentralized networks survive bears because code does not panic, capitulate, or doubt itself.", "On-Chain Conviction", "Resilience"),
+    ("The dollar was backed by gold, then by promises, and now by printing presses. Bitcoin is backed by thermodynamics.", "Robert Breedlove", "Hard Money"),
+    ("Real wealth is freedom of time, freedom of movement, and money that no entity can debase.", "Crypto Sovereign Ethos", "Sovereignty"),
+    ("The greatest transfer of wealth in human history is quietly happening right now on public ledgers.", "Macro Intelligence", "Generational Shift"),
+    ("Those who understand monetary history buy Bitcoin. Those who understand technology buy Ethereum.", "Crypto Maxim", "Crypto Philosophy"),
+    ("Trust code, audit everything, verify keys, and stay humble.", "Currencing Core Maxim", "Timeless Wisdom")
 ]
 
 # ─── 50+ RELATABLE CRYPTO MEMES & TRADING TRUTHS (REDDIT TOP UPVOTED) ─────────
@@ -176,7 +197,29 @@ MEME_VAULT = [
     ("Ghar Jayenga Isme", "Looking at the 15-minute liquidations chart and hearing MC Stan whisper in your ear: 'Isme tera ghar chala jayenga'.", "Verdict: Pure street wisdom."),
     ("Ek Din Me Paisa Double", "Watching Laxmi Chit Fund memes while staking coins on a shady decentralized protocol offering 4,000% APY.", "Verdict: Anuradha was Satoshi all along."),
     ("Pehle Investment, Phir Soch", "Investing first, checking the coin whitepaper never, and asking in Telegram group: 'Bhai pump kab hoga?'", "Verdict: The sacred ritual."),
-    ("Relatives Asking Career", "Relatives: 'Beta kya karte ho?' Me: 'Decentralized liquidity and sovereign cryptography operations.' (I have ₹400 in Doge).", "Verdict: International finance consultant.")
+    ("Relatives Asking Career", "Relatives: 'Beta kya karte ho?' Me: 'Decentralized liquidity and sovereign cryptography operations.' (I have ₹400 in Doge).", "Verdict: International finance consultant.", "DOGE"),
+
+    # ── Multi-Coin Dedicated & Universal Memes ──
+    ("Bitcoin Halving Anxiety", "Staring at the Bitcoin block countdown clock like it is New Year's Eve, expecting an instant green God candle to blast through your ceiling.", "Verdict: Halving priced in since 2012.", "BTC"),
+    ("Ethereum Gas Fees Again", "Paying $48 in gas fees to approve a token contract so you can pay another $72 in gas fees to actually swap it.", "Verdict: Ultrasound gas burns.", "ETH"),
+    ("Solana TPS Velocity", "Sending a Solana transaction that confirms before your thumb leaves the screen, only to realize you sent it to the wrong address at light speed.", "Verdict: Unmatched speed of sorrow.", "SOL"),
+    ("Telegram Stars & Gram", "Tapping your screen 50,000 times a day in Telegram mini apps to earn $1.40 worth of Gram/TON.", "Verdict: Certified full-time digital laborer.", "GRAM"),
+    ("TON Wallet Awakening", "Opening Telegram, finding out Durov sent you TON for being a channel member, and feeling like Satoshi personally blessed your chat.", "Verdict: Pavel Durov is the chosen one.", "GRAM"),
+    ("Monero Boating Incident", "Explaining to tax authorities why your hard drive fell into the Marianas Trench during a tragic fishing accident.", "Verdict: 100% untraceable submarine incident.", "XMR"),
+    ("XRP Courtroom Marathon", "Holding XRP through 4 US presidential administrations, 3 bear markets, and 8,000 pages of legal filings.", "Verdict: Gary Gensler's retirement gift.", "XRP"),
+    ("BNB Launchpool Farming", "Locking all your life savings into BNB launchpool for 3 days to earn 0.0004 of a new gaming governance token.", "Verdict: Funds are SAFU, yield is microscopic.", "BNB"),
+    ("Litecoin The Old Reliable", "Litecoin has not halted, failed, or missed a single block in 13 years, but nobody ever talks about it until it pumps 40% out of nowhere.", "Verdict: Digital silver stays unfazed.", "LTC"),
+    ("Tron USDT Energy Rental", "Sending $10,000 across the globe on Tron for exactly $1.20 while Ethereum traders look on in absolute disbelief.", "Verdict: Justin Sun's gift to retail.", "TRX"),
+    ("Dogecoin Twitter Signal", "Selling your car because an Elon Musk tweet had a Shiba Inu emoji in the bottom-left corner.", "Verdict: Barking at resistance levels.", "DOGE"),
+    ("Pepe The Green Candle Prophet", "A green cartoon frog with zero utility outperforming every Wall Street institutional hedge fund on Earth.", "Verdict: Feels extremely good man.", "PEPE"),
+    ("Shiba Army Vision", "Calculating how much money you will have when Shiba Inu reaches $1.00 (which would require more money than exists in the galaxy).", "Verdict: Mathematical imagination is infinite.", "SHIB"),
+    ("Cardano Whitepaper Reading", "Reading peer-reviewed academic papers in Latin to understand why your ADA stake pool earned 0.002 ADA this epoch.", "Verdict: Charles Hoskinson whiteboard supremacy.", "ADA"),
+    ("Avalanche Subnet Rush", "Setting up an Avalanche subnet because you wanted your own sovereign blockchain just to trade digital dog pictures with your friends.", "Verdict: Sub-second finality flex.", "AVAX"),
+    ("Chainlink Oracle Supremacy", "Every blockchain on earth arguing about consensus while Sergey Nazarov's oracles feed them all the exact same data anyway.", "Verdict: The fourth industrial revolution runs on oracles.", "LINK"),
+    ("100x Short Squeeze", "Deciding to short Bitcoin at resistance, only to watch a green candle punch straight through the atmosphere and liquidation notification arrive.", "Verdict: RIP collateral.", "BTC"),
+    ("Telegram Tap-To-Earn Fatigue", "Your phone screen has an actual thumb impression burnt into the OLED glass from tapping hamsters for 4 months.", "Verdict: Silicon Valley is baffled.", "GRAM"),
+    ("The Ghost In Monero", "Privacy maximalist sending Monero from a burner laptop in a Faraday cage inside a submarine.", "Verdict: Anonymity level: 9000.", "XMR"),
+    ("Ethereum Merge Nostalgia", "Remembering when Ethereum miners used enough electricity to power small European countries, now it runs on pure conviction.", "Verdict: Green energy maxis rejoiced.", "ETH")
 ]
 
 # ─── NON-REPEATING HISTORY TRACKERS ───────────────────────────────────────────
@@ -204,10 +247,12 @@ async def _send_fun_card(
     chat_id: int,
     image_buf: Any,
     reply_msg_id: Optional[int] = None,
-    kb: Optional[InlineKeyboardMarkup] = None
+    kb: Optional[InlineKeyboardMarkup] = None,
+    caption: Optional[str] = None
 ) -> None:
-    """Send image card with active sponsored quotation caption and sponsored button."""
+    """Send image card with active sponsored quotation caption or clean default caption."""
     sp_caption, sp_markup = await attach_sponsored_content(reply_markup=kb)
+    final_caption = sp_caption or caption
     send_kwargs = {
         "chat_id": chat_id,
         "photo": image_buf,
@@ -215,8 +260,8 @@ async def _send_fun_card(
     }
     if reply_msg_id:
         send_kwargs["reply_to_message_id"] = reply_msg_id
-    if sp_caption:
-        send_kwargs["caption"] = sp_caption
+    if final_caption:
+        send_kwargs["caption"] = final_caption
         send_kwargs["parse_mode"] = ParseMode.HTML
 
     await context.bot.send_photo(**send_kwargs)
@@ -268,15 +313,22 @@ async def daily_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     try:
         idx = _get_next_index(chat_id, len(DAILY_THOUGHTS), _recent_daily)
-        quote, author, source = DAILY_THOUGHTS[idx]
+        quote_item = DAILY_THOUGHTS[idx]
+        quote, author, source = quote_item[0], quote_item[1], quote_item[2]
         image_buf = render_daily_quote(quote, author, source)
+
+        today_date = datetime.utcnow().strftime("%d/%m")
+        clean_caption = (
+            f"{E('currencing')} <b>Daily Thoughts · {today_date}</b>\n"
+            f"via @{BOT_USERNAME}. Tap /meme or /top for more."
+        )
 
         kb = InlineKeyboardMarkup([
             [custom_btn("Next Thought", callback_data="fun:daily", icon="dice")],
             [custom_btn("Fun Meme", callback_data="fun:meme", icon="meme")],
             [custom_btn("Top Overview", callback_data="nav_overview", icon="chart")]
         ])
-        await _send_fun_card(context, chat_id, image_buf, reply_msg_id, kb)
+        await _send_fun_card(context, chat_id, image_buf, reply_msg_id, kb, caption=clean_caption)
     except Exception as e:
         logger.error("Error in /daily: %s", e)
         await context.bot.send_message(
@@ -286,9 +338,9 @@ async def daily_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             reply_to_message_id=reply_msg_id
         )
 
-# ─── 3. /meme (New Daily Fun Crypto Meme Card) ─────────────────────────────────
+# ─── 3. /meme (Daily Fun Crypto Meme Card — Any Coin) ─────────────────────────
 async def meme_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Generate and send daily fun crypto meme & degen truth card."""
+    """Generate and send daily fun crypto meme & degen truth card for any coin."""
     if not await check_user_authorization(update, context):
         return
 
@@ -299,16 +351,45 @@ async def meme_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     await context.bot.send_chat_action(chat_id=chat_id, action="upload_photo")
 
     try:
-        idx = _get_next_index(chat_id, len(MEME_VAULT), _recent_meme)
-        title, body, punchline = MEME_VAULT[idx]
-        image_buf = render_meme_card(title, body, punchline)
+        args = context.args or []
+        req_sym = None
+        if args:
+            raw_target = args[0].strip()
+            req_sym = resolve_coin(raw_target) or raw_target.upper()
+            if req_sym == "TON":
+                req_sym = "GRAM"
+
+        # If user asked for specific coin, filter by that coin if available
+        matched_indices = []
+        if req_sym:
+            for i, m in enumerate(MEME_VAULT):
+                c_tag = m[3] if len(m) > 3 else "DOGE"
+                if c_tag.upper() == req_sym.upper():
+                    matched_indices.append(i)
+
+        if matched_indices:
+            idx = random.choice(matched_indices)
+        else:
+            idx = _get_next_index(chat_id, len(MEME_VAULT), _recent_meme)
+
+        meme_item = MEME_VAULT[idx]
+        title, body, punchline = meme_item[0], meme_item[1], meme_item[2]
+        coin_sym = req_sym if req_sym else (meme_item[3] if len(meme_item) > 3 else random.choice(["BTC", "ETH", "SOL", "GRAM", "LTC", "XMR", "XRP", "BNB", "TRX", "DOGE", "PEPE", "SHIB"]))
+
+        image_buf = render_meme_card(title, body, punchline, coin_symbol=coin_sym)
+
+        today_date = datetime.utcnow().strftime("%d/%m")
+        clean_caption = (
+            f"{E('meme')} <b>Daily Degen Lore · {today_date}</b>\n"
+            f"via @{BOT_USERNAME}. Tap /meme or /top for more."
+        )
 
         kb = InlineKeyboardMarkup([
             [custom_btn("Another Meme", callback_data="fun:meme", icon="meme")],
             [custom_btn("Daily Thought", callback_data="fun:daily", icon="currencing")],
             [custom_btn("Top Rockets", callback_data="fun:wagmi", icon="ath")]
         ])
-        await _send_fun_card(context, chat_id, image_buf, reply_msg_id, kb)
+        await _send_fun_card(context, chat_id, image_buf, reply_msg_id, kb, caption=clean_caption)
     except Exception as e:
         logger.error("Error in /meme: %s", e)
         await context.bot.send_message(

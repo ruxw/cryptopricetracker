@@ -42,11 +42,21 @@ COIN_EMOJIS: Dict[str, Dict[str, str]] = {
     "ADA":   {"custom_id": "5289634288134793049", "fallback": "₳"},
     "AVAX":  {"custom_id": "5832482690804225948", "fallback": "▲"},
     "GRAM":  {"custom_id": "5969840323365443558", "fallback": "💎"},
+    "TON":   {"custom_id": "5969840323365443558", "fallback": "💎"},
     "TRX":   {"custom_id": "5969739043741636059", "fallback": "▲"},
     "LTC":   {"custom_id": "5771379449509448765", "fallback": "Ł"},
     "XMR":   {"custom_id": "5970037608393218118", "fallback": "ɱ"},
     "SHIB":  {"custom_id": "5463383281674232341", "fallback": "🐕"},
     "PEPE":  {"custom_id": "5384547868465968644", "fallback": "🐸"},
+    "LINK":  {"custom_id": "", "fallback": "🔗"},
+    "NEAR":  {"custom_id": "", "fallback": "Ⓝ"},
+    "SUI":   {"custom_id": "", "fallback": "💧"},
+    "APT":   {"custom_id": "", "fallback": "⬡"},
+    "DOT":   {"custom_id": "", "fallback": "●"},
+    "ICP":   {"custom_id": "", "fallback": "∞"},
+    "UNI":   {"custom_id": "", "fallback": "🦄"},
+    "BCH":   {"custom_id": "", "fallback": "₿"},
+    "XLM":   {"custom_id": "", "fallback": "🚀"},
 }
 
 # ─── UI / GENERAL EMOJIS ──────────────────────────────────────────────────────

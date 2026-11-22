@@ -263,7 +263,7 @@ async def inline_query_handler(update: Update, context: ContextTypes.DEFAULT_TYP
             results.append(InlineQueryResultArticle(
                 id="overview_summary",
                 title="📊 Currencing Market Overview (All Coins)",
-                description="Live prices & 24h changes for top 9 cryptocurrencies",
+                description="Live prices & 24h changes for top cryptocurrencies",
                 input_message_content=InputTextMessageContent(overview_caption, parse_mode=ParseMode.HTML),
                 reply_markup=kb_overview
             ))

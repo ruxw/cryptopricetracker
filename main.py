@@ -22,7 +22,10 @@ from bot.handlers.overview import overview_command, overview_callback
 from bot.handlers.stats import stats_command, stats_callback
 from bot.handlers.ath import ath_command, ath_callback
 from bot.handlers.convert import convert_command, convert_callback
-from bot.handlers.crypto import crypto_command, coin_shortcut, top_command, subscribe_callback
+from bot.handlers.crypto import (
+    crypto_command, coin_shortcut, top_command,
+    subscribe_callback, sub_command, unsub_command
+)
 from bot.handlers.meme import (
     satoshi_command, daily_command, meme_command,
     cope_command, panic_command, wagmi_command,
@@ -128,6 +131,8 @@ def setup_application(token: str):
     app.add_handler(CommandHandler("top", top_command))
     app.add_handler(CommandHandler("stats", stats_command))
     app.add_handler(CommandHandler("crypto", crypto_command))
+    app.add_handler(CommandHandler(["sub", "subscribe"], sub_command))
+    app.add_handler(CommandHandler(["unsub", "unsubscribe"], unsub_command))
     app.add_handler(CommandHandler("ath", ath_command))
     app.add_handler(CommandHandler("convert", convert_command))
 
@@ -149,7 +154,9 @@ def setup_application(token: str):
     shortcuts = {
         "btc": "BTC", "eth": "ETH", "sol": "SOL", "bnb": "BNB", "xrp": "XRP",
         "doge": "DOGE", "ada": "ADA", "avax": "AVAX", "ton": "GRAM", "gram": "GRAM",
-        "trx": "TRX", "ltc": "LTC", "xmr": "XMR", "shib": "SHIB", "pepe": "PEPE"
+        "trx": "TRX", "ltc": "LTC", "xmr": "XMR", "shib": "SHIB", "pepe": "PEPE",
+        "link": "LINK", "near": "NEAR", "sui": "SUI", "apt": "APT", "dot": "DOT",
+        "icp": "ICP", "uni": "UNI", "bch": "BCH", "xlm": "XLM"
     }
     for cmd, sym in shortcuts.items():
         app.add_handler(CommandHandler(cmd, lambda u, c, s=sym: coin_shortcut(u, c, s)))
